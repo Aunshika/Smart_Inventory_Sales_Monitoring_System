@@ -9,7 +9,7 @@ Frontend (HTML, CSS, JavaScript)
 FastAPI Backend
         │
         ▼
-MySQL Database
+MongoDB Atlas Database
         │
  ┌──────┼────────┬─────────┐
  ▼      ▼        ▼         ▼

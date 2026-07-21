@@ -1,0 +1,6 @@
+location_id,location_name,location_type,city
+LOC001,Hyderabad Warehouse,Warehouse,Hyderabad
+LOC002,Vijayawada Store,Store,Vijayawada
+LOC003,Bengaluru Warehouse,Warehouse,Bengaluru
+LOC004,Mumbai Store,Store,Mumbai
+LOC005,Chennai Warehouse,Warehouse,Chennai

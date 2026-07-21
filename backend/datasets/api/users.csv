@@ -1,0 +1,12 @@
+username,email,password,confirm_password,role,location_id
+aunshika_admin,aunshika.admin@inventory.example,Admin@123,Admin@123,Admin,ALL
+rahul_sharma,rahul.sharma@inventory.example,Manager@123,Manager@123,Manager,LOC001
+priya_mehta,priya.mehta@inventory.example,Manager@123,Manager@123,Manager,LOC002
+arjun_patel,arjun.patel@inventory.example,Manager@123,Manager@123,Manager,LOC003
+neha_verma,neha.verma@inventory.example,Manager@123,Manager@123,Manager,LOC004
+vikram_singh,vikram.singh@inventory.example,Manager@123,Manager@123,Manager,LOC005
+rohan_kumar,rohan.kumar@inventory.example,Staff@123,Staff@123,Staff,LOC001
+sneha_iyer,sneha.iyer@inventory.example,Staff@123,Staff@123,Staff,LOC002
+aman_gupta,aman.gupta@inventory.example,Staff@123,Staff@123,Staff,LOC003
+kavya_reddy,kavya.reddy@inventory.example,Staff@123,Staff@123,Staff,LOC004
+dev_malhotra,dev.malhotra@inventory.example,Staff@123,Staff@123,Staff,LOC005

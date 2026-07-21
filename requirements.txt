@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pymongo
+python-dotenv
+python-jose
+certifi
+python-multipart
+reportlab
+tzdata

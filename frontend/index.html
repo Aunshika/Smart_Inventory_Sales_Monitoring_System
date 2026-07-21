@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css?v=recaptcha-fix-1">
+</head>
+<body>
+  <section id="authScreen" class="auth-screen">
+    <aside id="authVisual" class="auth-visual login-visual">
+      <div class="auth-visual-copy">
+        <h1 id="visualTitle">Smart Inventory &amp;<br>Sales Monitoring System</h1>
+        <span class="title-rule"></span>
+        <p id="visualSubtitle">Track inventory in real-time, monitor sales, manage stock, and grow your business smarter.</p>
+      </div>
+      <div id="authBenefits" class="auth-benefits">
+        <div class="feature-block"><span class="feature-icon shield-icon" aria-hidden="true"></span><span>Secure<br>&amp; Reliable</span></div>
+        <div class="feature-block"><span class="feature-icon chart-icon" aria-hidden="true"></span><span>Real-time<br>Tracking</span></div>
+        <div class="feature-block"><span class="feature-icon decision-icon" aria-hidden="true"></span><span>Better<br>Decisions</span></div>
+      </div>
+    </aside>
+
+    <main class="auth-card">
+      <div class="auth-logo"><span class="auth-logo-mark">SI</span><strong>Smart <em>Inventory</em></strong></div>
+
+      <div id="loginView">
+        <p class="auth-subtitle">Sign in to continue to your account</p>
+        <form id="loginForm" class="auth-form">
+          <label for="loginUsername">Username or email</label>
+          <div class="input-wrap"><input id="loginUsername" type="text" placeholder="Enter username or email" required autocomplete="username"></div>
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap"><input id="loginPassword" type="password" placeholder="Enter your password" required autocomplete="current-password"><button class="password-toggle" type="button" data-password-target="loginPassword" aria-label="Show password">Show</button></div>
+          <div id="loginPasswordFeedback" class="password-feedback" aria-live="polite"></div>
+          <div class="form-row"><label class="checkbox-label"><input type="checkbox"> Remember me</label><button id="forgotPasswordButton" type="button" class="form-link text-button">Forgot password?</button></div>
+          <div id="login-recaptcha-section" class="recaptcha-section">
+            <div id="login-recaptcha"></div>
+            <p id="login-recaptcha-message" class="form-error" hidden></p>
+          </div>
+          <button type="submit">Sign in</button>
+        </form>
+        <div class="auth-divider"><span>or</span></div>
+        <div id="googleSignInButton" class="google-button google-signin-host" role="button" tabindex="0" aria-label="Sign in with Google"><span class="google-mark">G</span> Sign in with Google</div>
+        <p class="auth-switch">Don't have an account? <button id="openRegister" type="button" class="text-button">Sign up</button></p>
+      </div>
+
+      <div id="registerView" hidden>
+        <p class="auth-subtitle">Create your new account</p>
+        <form id="registerForm" class="auth-form">
+          <label for="regFullName">Full Name</label>
+          <input id="regFullName" type="text" placeholder="Enter your full name" required autocomplete="name">
+          <label for="regEmail">Email</label>
+          <input id="regEmail" type="email" placeholder="Enter your email" required autocomplete="email">
+          <label for="regPhone">Phone Number</label>
+          <input id="regPhone" type="tel" placeholder="Enter your phone number" required autocomplete="tel">
+          <label for="regRole">Role</label>
+          <select id="regRole" required>
+            <option value="Staff" selected>Staff</option>
+            <option value="Manager">Manager</option>
+          </select>
+          <div id="regWarehouseGroup">
+            <label for="regWarehouseName">Warehouse Name</label>
+            <input id="regWarehouseName" type="text" placeholder="Enter warehouse name" autocomplete="organization">
+          </div>
+          <label for="regPassword">Password</label>
+          <div class="input-wrap"><input id="regPassword" type="password" placeholder="Create a password" required minlength="8" autocomplete="new-password"><button class="password-toggle" type="button" data-password-target="regPassword" aria-label="Show password">Show</button></div>
+          <div id="regPasswordFeedback" class="password-feedback" aria-live="polite"></div>
+          <label for="regConfirmPassword">Confirm password</label>
+          <div class="input-wrap"><input id="regConfirmPassword" type="password" placeholder="Confirm your password" required minlength="8" autocomplete="new-password"><button class="password-toggle" type="button" data-password-target="regConfirmPassword" aria-label="Show password">Show</button></div>
+          <label class="checkbox-label terms"><input id="terms" type="checkbox" required> I agree to the <span class="form-link">Terms and Conditions</span></label>
+          <div id="register-recaptcha-section" class="recaptcha-section">
+            <div id="register-recaptcha" aria-label="reCAPTCHA verification"></div>
+            <p id="register-recaptcha-message" class="form-error" hidden></p>
+          </div>
+          <button type="submit">Sign up</button>
+        </form>
+        <p class="auth-switch">Already have an account? <button id="openLogin" type="button" class="text-button">Sign in</button></p>
+      </div>
+      <p id="authStatus" class="auth-status" role="alert" hidden></p>
+    </main>
+  </section>
+
+  <section id="dashboardScreen" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><i data-lucide="package-check"></i></div><div><h1>Smart Inventory</h1><p>Sales Monitoring System</p></div></div>
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-link active" data-view="dashboard"><i data-lucide="layout-dashboard"></i>Dashboard</button>
+        <button class="nav-link" data-view="products"><i data-lucide="package"></i>Products</button>
+        <button class="nav-link" data-view="inventory"><i data-lucide="boxes"></i>Inventory</button>
+        <button class="nav-link" data-view="sales"><i data-lucide="chart-no-axes-combined"></i>Sales</button>
+        <button class="nav-link" data-view="purchases"><i data-lucide="shopping-cart"></i>Purchases</button>
+        <button class="nav-link" data-view="suppliers"><i data-lucide="contact-round"></i>Suppliers</button>
+        <button class="nav-link" data-view="reports"><i data-lucide="file-bar-chart"></i>Reports</button>
+        <button class="nav-link" data-view="analytics"><i data-lucide="chart-column"></i>Analytics</button>
+        <button class="nav-link" data-view="users"><i data-lucide="users-round"></i>Users</button>
+        <button class="nav-link" data-view="settings"><i data-lucide="settings"></i>Settings</button>
+      </nav>
+      <div class="sidebar-profile"><span id="sidebar-user-avatar" class="profile-avatar">A</span><div><strong id="sidebar-user-name">Aunshika</strong><small id="sidebar-user-role">Admin</small></div><button id="sidebarProfileMenuButton" class="profile-more" type="button" aria-label="Profile options"><i data-lucide="ellipsis"></i></button><div id="sidebarProfileMenu" class="dashboard-popover profile-menu" hidden></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-trigger" type="button" aria-label="Navigation"><i data-lucide="menu"></i></button>
+        <div class="search-container"><label class="dashboard-search"><i data-lucide="search"></i><input id="dashboardSearchInput" placeholder="Search products, orders..." aria-label="Search" autocomplete="off"></label><div id="searchResults" class="dashboard-popover search-results" hidden></div></div>
+        <div class="notification-container"><button id="notificationButton" class="notification-button" type="button" aria-label="Notifications"><i data-lucide="bell"></i><b id="notificationCount" hidden>0</b></button><div id="notificationMenu" class="dashboard-popover notification-menu" hidden></div></div>
+        <div class="profile-container"><button id="headerProfileButton" class="header-profile" type="button" aria-label="Open account menu"><span id="header-user-avatar" class="profile-avatar">A</span><div><strong id="header-user-name">Aunshika</strong><small id="header-user-role">Admin</small></div><i data-lucide="chevron-down"></i></button><div id="headerProfileMenu" class="dashboard-popover profile-menu" hidden></div></div>
+        <button class="sign-out" onclick="logout()">Sign out</button>
+      </header>
+      <section class="dashboard-intro"><div><h2 id="dashboardTitle">Hello, <span>Aunshika!</span> <span aria-hidden="true">&#128075;</span></h2><p id="welcomeText">Welcome back! Here&apos;s what&apos;s happening with your inventory today.</p></div><div class="date-container"><button id="dateRangeButton" class="date-card" type="button"><i data-lucide="calendar-days"></i><span id="dateRangeLabel">Last 7 Days</span><i data-lucide="chevron-down"></i></button><div id="dateRangeMenu" class="dashboard-popover date-range-menu" hidden></div></div></section>
+      <section id="dashboardContent">
+        <div id="dashboardStatus" class="status" hidden></div>
+        <div class="kpi-grid">
+          <article class="kpi-card mint"><span class="kpi-icon"><i data-lucide="package-check"></i></span><div><small>Total Products</small><strong id="totalProducts">0</strong><p id="productsTrend">No previous data</p></div><span class="sparkline"></span></article>
+          <article class="kpi-card purple"><span class="kpi-icon"><i data-lucide="shopping-cart"></i></span><div><small>Total Sales</small><strong id="totalSales">0</strong><p id="salesTrend">No previous data</p></div><span class="sparkline"></span></article>
+          <article class="kpi-card orange"><span class="kpi-icon"><i data-lucide="shopping-bag"></i></span><div><small>Total Purchases</small><strong id="totalPurchases">0</strong><p id="purchasesTrend">No previous data</p></div><span class="sparkline"></span></article>
+          <article class="kpi-card rose"><span class="kpi-icon"><i data-lucide="triangle-alert"></i></span><div><small>Low Stock Items</small><strong id="lowStock">0</strong><p id="lowStockTrend">Current inventory level</p></div><span class="sparkline"></span></article>
+          <article class="kpi-card sky"><span class="kpi-icon"><i data-lucide="users-round"></i></span><div><small>Total Suppliers</small><strong id="totalSuppliers">0</strong><p>Active suppliers</p></div><span class="sparkline"></span></article>
+        </div>
+        <div class="dashboard-grid top-insights">
+          <section class="panel sales-overview"><div class="section-heading"><div><h3>Sales Overview</h3><strong id="salesOverviewValue">0</strong><p>Total Sales</p></div><button id="salesPeriodButton" class="period-button" type="button">Last 7 Days</button></div><div class="chart-area"><span class="chart-label l1" id="chartHighLabel">0</span><span class="chart-label l2" id="chartMidLabel">0</span><div id="chartBars" class="chart-bars"></div></div></section>
+          <section class="panel category-card"><div class="section-heading"><h3>Sales by Category</h3><button id="categoryPeriodButton" class="period-button" type="button">Last 7 Days</button></div><div class="donut-layout"><div id="salesDonut" class="donut"><strong id="donutSalesValue">0</strong><small>Total Sales</small></div><ul id="categoryLegend" class="legend"></ul></div></section>
+        </div>
+        <div class="dashboard-grid lower-insights">
+          <section id="inventoryStatusCard" class="inventory-status-card status-healthy" role="button" tabindex="0" aria-label="Open inventory health details"><div><h3>Inventory Status</h3><p>Your inventory is</p><strong id="inventoryStatusText">Healthy</strong><span id="inventoryStatusBadge" class="healthy-dot">OK</span><small id="inventoryStatusDescription">All systems operational</small></div><img src="assets/images/dashboard-inventory-status.png" alt="Inventory checklist illustration"></section>
+          <section class="panel quick-actions"><h3>Quick Actions</h3><button data-quick-view="products"><span><i data-lucide="package-plus"></i>Add Product</span><i data-lucide="chevron-right"></i></button><button data-quick-view="sales"><span><i data-lucide="shopping-cart"></i>New Sale</span><i data-lucide="chevron-right"></i></button><button data-quick-view="purchases"><span><i data-lucide="shopping-bag"></i>New Purchase</span><i data-lucide="chevron-right"></i></button><button data-quick-view="reports"><span><i data-lucide="file-bar-chart"></i>View Reports</span><i data-lucide="chevron-right"></i></button></section>
+          <section class="panel low-stock-table"><div class="section-heading"><h3>Low Stock Alerts</h3><button data-quick-view="inventory" class="view-all" type="button">View All</button></div><table><thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead><tbody id="lowStockRows"><tr><td>Loading alerts...</td><td>-</td><td>-</td></tr></tbody></table></section>
+        </div>
+        <section class="at-a-glance">
+          <h3>At a Glance</h3>
+          <div class="glance-metric glance-sales"><span class="glance-icon"><i data-lucide="shopping-bag"></i></span><div><span id="glanceSalesLabel">Today&apos;s Sales</span><strong id="glanceSales">0</strong><em id="glanceSalesTrend">No previous data</em></div></div>
+          <div class="glance-metric glance-orders"><span class="glance-icon"><i data-lucide="shopping-cart"></i></span><div><span id="glanceOrdersLabel">Today&apos;s Orders</span><strong id="glanceOrders">0</strong><em id="glanceOrdersTrend">No previous data</em></div></div>
+          <div class="glance-metric glance-customers"><span class="glance-icon"><i data-lucide="users-round"></i></span><div><span id="glanceCustomersLabel">New Customers</span><strong id="glanceCustomers">0</strong><em id="glanceCustomersTrend">No previous data</em></div></div>
+          <div class="glance-metric glance-suppliers"><span class="glance-icon"><i data-lucide="package"></i></span><div><span>Total Suppliers</span><strong id="glanceSuppliers">0</strong><em>No change</em></div></div>
+        </section>
+      </section>
+    </main>
+  </section>
+
+  <div id="modalOverlay" class="modal-overlay" hidden></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/routes.js"></script>
+  <script src="assets/js/login.js"></script>
+  <script src="assets/js/register.js"></script>
+  <script src="assets/js/dashboard.js"></script>
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/inventory.js"></script>
+  <script src="assets/js/sales.js"></script>
+  <script src="assets/js/purchases.js"></script>
+  <script src="assets/js/suppliers.js"></script>
+  <script src="assets/js/reports.js"></script>
+  <script src="assets/js/analytics.js"></script>
+  <script src="assets/js/users.js"></script>
+  <script src="assets/js/settings.js?v=settings-functional-5"></script>
+  <script src="assets/js/profile.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit" async defer></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="assets/js/script.js?v=recaptcha-fix-1"></script>
+</body>
+</html>   
+
+
+
+
+
+
+
+
+
+
+
+
+
