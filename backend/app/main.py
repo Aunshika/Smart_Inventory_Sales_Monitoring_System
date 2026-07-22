@@ -2,14 +2,12 @@ from contextlib import asynccontextmanager
 import asyncio
 import csv
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
 import hashlib
 import io
 import json
 import os
 import re
 import secrets
-import smtplib
 import sys
 import threading
 import time
@@ -18,6 +16,7 @@ from pathlib import Path as FilePath
 from typing import Optional
 
 from dotenv import load_dotenv
+import requests
 
 BASE_DIR = FilePath(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env", override=False)
@@ -137,7 +136,7 @@ async def lifespan(app):
     except Exception as exc:
         print(f"[startup] database initialization failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         traceback.print_exc()
-    warn_if_smtp_missing()
+    warn_if_brevo_missing()
     warn_if_recaptcha_missing()
     if clean_env_value("RUN_STARTUP_MAINTENANCE", "0") in {"1", "true", "yes", "on"}:
         threading.Thread(target=run_startup_maintenance, daemon=True).start()
@@ -216,6 +215,7 @@ async def serve_frontend_clean_routes(request: Request, call_next):
     }:
         return RedirectResponse("/login")
     if request.method == "GET" and accepts_html and request.url.path in {
+        "/reset-password",
         "/reset-password.html",
         "/frontend/reset-password.html"
     }:
@@ -402,43 +402,77 @@ def clean_env_value(name, default=""):
     return str(value).strip().strip('"').strip("'") if value is not None else ""
 
 
-def smtp_settings():
-    raw_port = clean_env_value("SMTP_PORT", "587") or "587"
-    try:
-        smtp_port = int(raw_port)
-    except (TypeError, ValueError):
-        print(f"Invalid SMTP_PORT value configured: {raw_port!r}", file=sys.stderr)
-        smtp_port = 587
+BREVO_EMAIL_API_URL = "https://api.brevo.com/v3/smtp/email"
+BREVO_TIMEOUT_SECONDS = 20
 
-    host = clean_env_value("SMTP_HOST", "smtp.gmail.com")
-    password = clean_env_value("SMTP_PASSWORD")
-    if "gmail.com" in host.lower():
-        password = re.sub(r"\s+", "", password)
 
+def frontend_base_url():
+    return clean_env_value("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
+
+
+def brevo_settings():
     return {
-        "host": host,
-        "port": smtp_port,
-        "email": clean_env_value("SMTP_EMAIL"),
-        "password": password,
-        "frontend_url": clean_env_value("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
+        "api_key": clean_env_value("BREVO_API_KEY"),
+        "sender_email": clean_env_value("EMAIL_FROM"),
+        "frontend_url": frontend_base_url()
     }
 
 
-def warn_if_smtp_missing():
-    settings = smtp_settings()
-    print(f"SMTP host loaded: {bool(settings.get('host'))}", file=sys.stderr)
-    print(f"SMTP port loaded: {bool(settings.get('port'))}", file=sys.stderr)
-    print(f"SMTP email loaded: {bool(settings.get('email'))}", file=sys.stderr)
-    print(f"SMTP password loaded: {bool(settings.get('password'))}", file=sys.stderr)
-    missing = [key for key in ("host", "email", "password") if not settings.get(key)]
+def warn_if_brevo_missing():
+    settings = brevo_settings()
+    print(f"Brevo API key loaded: {bool(settings.get('api_key'))}", file=sys.stderr)
+    print(f"Brevo sender email loaded: {bool(settings.get('sender_email'))}", file=sys.stderr)
+    missing = [key for key in ("api_key", "sender_email") if not settings.get(key)]
     if missing:
         print(
-            f"WARNING: SMTP is not fully configured. Missing: {', '.join(missing)}. "
-            "Password reset emails will fail until .env is fixed.",
+            f"WARNING: Brevo email is not fully configured. Missing: {', '.join(missing)}. "
+            "Forgot-password emails will fail until .env is fixed.",
             file=sys.stderr
         )
 
 
+def send_brevo_email(recipient_email: str, subject: str, html_content: str) -> None:
+    settings = brevo_settings()
+    api_key = settings["api_key"]
+    sender_email = settings["sender_email"]
+    missing = [name for name, value in (("BREVO_API_KEY", api_key), ("EMAIL_FROM", sender_email)) if not value]
+    if missing:
+        logger.error("Brevo email configuration missing: %s", ", ".join(missing))
+        raise HTTPException(status_code=503, detail="Unable to send email. Please try again.")
+
+    payload = {
+        "sender": {"name": "Smart Inventory", "email": sender_email},
+        "to": [{"email": recipient_email}],
+        "subject": subject,
+        "htmlContent": html_content
+    }
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    logger.info("Brevo request started for recipient=%s", recipient_email)
+    try:
+        response = requests.post(
+            BREVO_EMAIL_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=BREVO_TIMEOUT_SECONDS
+        )
+    except requests.Timeout as exc:
+        logger.error("Brevo network or timeout error for recipient=%s: timeout", recipient_email)
+        raise HTTPException(status_code=503, detail="Unable to send email. Please try again.") from exc
+    except requests.RequestException as exc:
+        logger.error("Brevo network or timeout error for recipient=%s: %s", recipient_email, type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Unable to send email. Please try again.") from exc
+
+    if response.status_code in {200, 201, 202}:
+        logger.info("Brevo email sent successfully for recipient=%s status=%s", recipient_email, response.status_code)
+        return
+
+    logger.error("Brevo request failed with status code %s for recipient=%s", response.status_code, recipient_email)
+    raise HTTPException(status_code=503, detail="Unable to send email. Please try again.")
 
 
 def has_real_recaptcha_site_key():
@@ -466,82 +500,6 @@ def warn_if_recaptcha_missing():
     print(f"reCAPTCHA secret key loaded: {has_real_recaptcha_secret_key()}", file=sys.stderr)
     if enabled and not recaptcha_enforcement_enabled():
         print("ERROR: reCAPTCHA is enabled but real site/secret keys are not configured. Login, registration, and forgot-password verification will fail until .env is fixed.", file=sys.stderr)
-
-def smtp_error_category(exc):
-    if isinstance(exc, smtplib.SMTPAuthenticationError):
-        return "SMTPAuthenticationError"
-    if isinstance(exc, smtplib.SMTPConnectError):
-        return "SMTPConnectError"
-    if isinstance(exc, smtplib.SMTPServerDisconnected):
-        return "SMTPServerDisconnected"
-    if isinstance(exc, TimeoutError):
-        return "SMTPTimeoutError"
-    if isinstance(exc, OSError):
-        return "SMTPNetworkError"
-    return type(exc).__name__
-
-
-SMTP_TIMEOUT_SECONDS = 10
-
-def send_smtp_message(recipient, subject, body, unavailable_detail):
-    smtp_started = time.perf_counter()
-
-    def smtp_log(step):
-        elapsed_ms = (time.perf_counter() - smtp_started) * 1000
-        print(f"[smtp] {step} in {elapsed_ms:.1f}ms", file=sys.stderr)
-
-    settings = smtp_settings()
-    sender = settings["email"]
-    password = settings["password"]
-    smtp_host = settings["host"]
-    smtp_port = settings["port"]
-    smtp_log("settings loaded")
-
-    missing = [name for name, value in (("SMTP_HOST", smtp_host), ("SMTP_EMAIL", sender), ("SMTP_PASSWORD", password)) if not value]
-    if missing:
-        print(f"SMTP missing required setting(s): {', '.join(missing)}", file=sys.stderr)
-        raise HTTPException(status_code=503, detail=unavailable_detail)
-
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = sender
-    message["To"] = recipient
-    message.set_content(body)
-    smtp_log("message prepared")
-
-    try:
-        if smtp_port == 465:
-            smtp_log(f"connecting to {smtp_host}:{smtp_port} with SSL")
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=SMTP_TIMEOUT_SECONDS) as server:
-                smtp_log("SMTP SSL connected")
-                server.ehlo()
-                smtp_log("SMTP EHLO completed")
-                server.login(sender, password)
-                smtp_log("SMTP authentication completed")
-                server.send_message(message)
-                smtp_log("email sent")
-        else:
-            smtp_log(f"connecting to {smtp_host}:{smtp_port} with STARTTLS")
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=SMTP_TIMEOUT_SECONDS) as server:
-                smtp_log("SMTP connected")
-                server.ehlo()
-                smtp_log("SMTP EHLO completed")
-                server.starttls()
-                smtp_log("SMTP STARTTLS completed")
-                server.ehlo()
-                smtp_log("SMTP TLS EHLO completed")
-                server.login(sender, password)
-                smtp_log("SMTP authentication completed")
-                server.send_message(message)
-                smtp_log("email sent")
-    except (TimeoutError, OSError, smtplib.SMTPException) as exc:
-        smtp_log(f"SMTP failed: {smtp_error_category(exc)}")
-        print(
-            f"SMTP send failed ({smtp_error_category(exc)}) via {smtp_host}:{smtp_port} for recipient {recipient}: {exc}",
-            file=sys.stderr
-        )
-        traceback.print_exc()
-        raise HTTPException(status_code=503, detail=unavailable_detail) from exc
 
 def build_login_response(user, message="Login successful"):
     full_name = user.get("full_name") or user["username"]
@@ -1136,20 +1094,67 @@ def as_utc_datetime(value):
     return None
 
 
+def build_password_reset_email_html(reset_link: str) -> str:
+    safe_reset_link = xml_escape(reset_link)
+    return f"""
+    <!doctype html>
+    <html>
+      <body style="margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:32px 12px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,0.10);overflow:hidden;">
+                <tr>
+                  <td style="background:#1e3a5f;padding:28px 32px;color:#ffffff;">
+                    <h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:800;">Smart Inventory</h1>
+                    <p style="margin:6px 0 0;color:#dbeafe;font-size:14px;">Sales Monitoring System</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:32px;">
+                    <h2 style="margin:0 0 12px;font-size:22px;color:#111827;">Reset your password</h2>
+                    <p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#4b5563;">
+                      We received a request to reset the password for your Smart Inventory account.
+                      Use the button below to create a new password.
+                    </p>
+                    <p style="margin:0 0 26px;text-align:center;">
+                      <a href="{safe_reset_link}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:10px;font-size:15px;">
+                        Reset Password
+                      </a>
+                    </p>
+                    <p style="margin:0 0 8px;font-size:13px;line-height:1.55;color:#64748b;">
+                      If the button does not work, copy and paste this link into your browser:
+                    </p>
+                    <p style="margin:0 0 22px;font-size:13px;line-height:1.55;word-break:break-all;">
+                      <a href="{safe_reset_link}" style="color:#2563eb;">{safe_reset_link}</a>
+                    </p>
+                    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#4b5563;">
+                      This reset link expires in <strong>30 minutes</strong> and can be used only once.
+                    </p>
+                    <p style="margin:0;font-size:14px;line-height:1.6;color:#4b5563;">
+                      If you did not request this password reset, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:18px 32px;background:#f8fafc;border-top:1px solid #e5e7eb;color:#64748b;font-size:12px;line-height:1.5;">
+                    Smart Inventory Sales Monitoring System
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+
 def send_password_reset_email(recipient, reset_link):
-    send_smtp_message(
-        recipient=recipient,
+    send_brevo_email(
+        recipient_email=recipient,
         subject="Reset Your Smart Inventory Password",
-        body=(
-            "Hello,\n\n"
-            "We received a request to reset your password.\n\n"
-            "Click the link below to reset your password:\n\n"
-            f"{reset_link}\n\n"
-            "This link will expire in 30 minutes.\n\n"
-            "If you did not request this, please ignore this email.\n\n"
-            "Smart Inventory Team"
-        ),
-        unavailable_detail="Unable to send email. Please try again."
+        html_content=build_password_reset_email_html(reset_link)
     )
 
 def parse_report_date(value, field_name):
@@ -3053,7 +3058,7 @@ def forgot_password(request: ForgotPasswordRequest):
             }}
         )
 
-        reset_link = f"{smtp_settings()['frontend_url']}/reset-password.html?token={token}"
+        reset_link = f"{frontend_base_url()}/reset-password?token={token}"
         send_password_reset_email(user["email"], reset_link)
         return {"message": safe_message}
     except HTTPException:

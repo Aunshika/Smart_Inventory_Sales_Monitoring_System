@@ -40,6 +40,7 @@ def old_index_paths():
     return RedirectResponse("/login")
 
 
+@app.get("/reset-password")
 @app.get("/reset-password.html")
 @app.get("/frontend/reset-password.html")
 def reset_password_page():
