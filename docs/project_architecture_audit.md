@@ -421,8 +421,8 @@ Smart_Inventory_Sales_Monitoring_System/
 +-- reports/
 +-- uploads/
 +-- logs/
-+-- Dockerfile.backend
-+-- Dockerfile.frontend
++-- backend/Dockerfile
++-- frontend/Dockerfile
 +-- docker-compose.yml
 +-- .env.example
 +-- .gitignore

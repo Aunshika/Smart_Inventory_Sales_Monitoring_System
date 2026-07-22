@@ -7,6 +7,7 @@
 - HTML
 - CSS
 - JavaScript
+- Docker
 
 ## Modules
 1. Authentication
@@ -29,10 +30,29 @@ suppliers, products, purchases, sales, stock movements, and users separate.
 Generate or import it with:
 
 ```powershell
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 python backend/scripts/generate_inventory_dataset.py
 python backend/scripts/seed_data.py
 ```
 
 The import is idempotent and populates every MongoDB collection used by
 the data-entry endpoints.
+
+## Docker and Deployment
+
+Local Docker startup:
+
+```powershell
+copy .env.development.example .env
+.\docker\start.ps1
+```
+
+Production Docker startup:
+
+```powershell
+copy .env.production.example .env.production
+.\docker\start.ps1 -Prod
+```
+
+See `docs/deployment.md` for environment variables, HTTPS setup, persistent volumes, health checks, and the production verification checklist.
+

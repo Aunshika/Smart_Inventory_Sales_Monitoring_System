@@ -7,3 +7,5 @@ certifi
 python-multipart
 reportlab
 tzdata
+passlib[bcrypt]
+bcrypt==4.0.1

@@ -1,18 +1,15 @@
 services:
   database:
     image: mongo:7
-    container_name: smart_inventory_mongodb
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
+    restart: always
     volumes:
       - smart_inventory_mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 10
+      start_period: 30s
     networks:
       - smart_inventory_network
 
@@ -20,17 +17,16 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: smart_inventory_backend
-    restart: unless-stopped
+    restart: always
     env_file:
-      - .env
+      - ${APP_ENV_FILE:-.env.production}
     environment:
+      ENVIRONMENT: production
       MONGODB_URI: mongodb://database:27017/Smartinventory
       DATABASE_NAME: Smartinventory
-      FRONTEND_URL: http://localhost:5500
       RUN_STARTUP_MAINTENANCE: "0"
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     volumes:
       - smart_inventory_uploads:/app/backend/uploads
       - smart_inventory_exports:/app/exports
@@ -42,8 +38,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()"]
       interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 45s
     networks:
       - smart_inventory_network
 
@@ -51,19 +47,28 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    container_name: smart_inventory_frontend
-    restart: unless-stopped
+    restart: always
     environment:
-      API_BASE_URL: http://localhost:8080
-      GOOGLE_AUTH_API_BASE_URL: http://localhost:8080
+      API_BASE_URL: ${PUBLIC_BACKEND_URL}
+      GOOGLE_AUTH_API_BASE_URL: ${PUBLIC_BACKEND_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
       RECAPTCHA_ENABLED: ${RECAPTCHA_ENABLED:-true}
     ports:
-      - "5500:5500"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - smart_inventory_network
 
@@ -76,3 +81,4 @@ volumes:
 networks:
   smart_inventory_network:
     driver: bridge
+

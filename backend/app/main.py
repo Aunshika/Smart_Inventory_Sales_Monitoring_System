@@ -43,9 +43,12 @@ from pymongo import DeleteMany, InsertOne, UpdateMany, UpdateOne
 from fastapi.staticfiles import StaticFiles
 from pymongo.errors import DuplicateKeyError, PyMongoError
 
-from app.core.auth import hash_password, verify_password
+from app.core.auth import hash_password, password_needs_rehash, verify_password
 from app.core.jwt_handler import create_access_token, decode_access_token
+from app.core.logging_config import configure_logging
 from app.core.roles import check_role
+
+logger = configure_logging()
 from app.db.database import (
     initialize_database,
     products_collection,
@@ -169,7 +172,11 @@ app = FastAPI(
 FRONTEND_DIR = FilePath(__file__).resolve().parents[2] / "frontend"
 UPLOADS_DIR = FilePath(__file__).resolve().parents[1] / "uploads"
 PRODUCT_UPLOAD_DIR = UPLOADS_DIR / "products"
+EXPORTS_DIR = FilePath(__file__).resolve().parents[2] / "exports"
+LOGS_DIR = FilePath(__file__).resolve().parents[2] / "logs"
 PRODUCT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_ROUTES = {
     "/login",
     "/register",
@@ -220,20 +227,37 @@ async def serve_frontend_clean_routes(request: Request, call_next):
         return FileResponse(FRONTEND_DIR / "index.html")
     return await call_next(request)
 
+def configured_cors_origins():
+    raw_origins = os.getenv(
+        "CORS_ORIGINS",
+        "http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:3000,http://localhost:3000"
+    )
+    origins = [origin.strip().rstrip("/") for origin in raw_origins.split(",") if origin.strip()]
+    if os.getenv("ENVIRONMENT", "development").lower() != "production":
+        origins.append("null")
+    return sorted(set(origins))
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-        "null"
-    ],
+    allow_origins=configured_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition", "Content-Type"]
 )
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(self), microphone=(), geolocation=()")
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
 
 
 
@@ -247,12 +271,11 @@ async def request_timing_logger(request: Request, call_next):
         status_code = response.status_code
         return response
     except Exception:
-        print(f"[req:{request_id}] {request.method} {request.url.path} failed")
-        traceback.print_exc()
+        logger.exception("[req:%s] %s %s failed", request_id, request.method, request.url.path)
         raise
     finally:
         elapsed_ms = (time.perf_counter() - started) * 1000
-        print(f"[req:{request_id}] {request.method} {request.url.path} {status_code} {elapsed_ms:.1f}ms")
+        logger.info("[req:%s] %s %s %s %.1fms", request_id, request.method, request.url.path, status_code, elapsed_ms)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
@@ -264,7 +287,7 @@ def health_check():
 LOGIN_WINDOW_SECONDS = 60
 MAX_FAILED_LOGIN_ATTEMPTS = 5
 ACCOUNT_LOCK_SECONDS = 15 * 60
-ADMIN_SESSION_SECONDS = 15 * 60
+ADMIN_SESSION_SECONDS = int(str(os.getenv("JWT_ADMIN_TOKEN_EXPIRE_MINUTES", "15")).strip() or "15") * 60
 LOGIN_ATTEMPTS = {}
 LOGIN_LOCKS = {}
 LOGIN_DATABASE_TIMEOUT_SECONDS = 8
@@ -2131,246 +2154,6 @@ def supplier_csv_report_response(filename, report):
     )
 
 
-def wrap_pdf_line(value, width=96):
-    text = str(value or "")
-    if len(text) <= width:
-        return [text]
-
-    chunks = []
-    current = ""
-    for word in text.split():
-        candidate = f"{current} {word}".strip()
-        if len(candidate) > width and current:
-            chunks.append(current)
-            current = word
-        else:
-            current = candidate
-
-    if current:
-        chunks.append(current)
-
-    return chunks or [text[:width]]
-
-
-def build_text_pdf_document(pages):
-    objects = [
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        None,
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
-    ]
-    page_object_numbers = []
-
-    for page_lines in pages:
-        content_lines = [
-            "BT",
-            "/F1 16 Tf",
-            "42 760 Td"
-        ]
-
-        for index, line in enumerate(page_lines):
-            if index == 1:
-                content_lines.extend(["/F1 10 Tf", "0 -22 Td"])
-            elif index > 1:
-                content_lines.append("0 -13 Td")
-            content_lines.append(f"({escape_pdf_text(line[:118])}) Tj")
-
-        content_lines.append("ET")
-        content = "\n".join(content_lines).encode("latin-1", errors="replace")
-
-        content_object_number = len(objects) + 1
-        objects.append(
-            b"<< /Length " + str(len(content)).encode("ascii") +
-            b" >>\nstream\n" + content + b"\nendstream"
-        )
-
-        page_object_number = len(objects) + 1
-        page_object_numbers.append(page_object_number)
-        objects.append(
-            (
-                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-                f"/Resources << /Font << /F1 3 0 R >> >> "
-                f"/Contents {content_object_number} 0 R >>"
-            ).encode("ascii")
-        )
-
-    kids = " ".join(f"{number} 0 R" for number in page_object_numbers)
-    objects[1] = f"<< /Type /Pages /Kids [{kids}] /Count {len(page_object_numbers)} >>".encode("ascii")
-
-    pdf = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-
-    for index, obj in enumerate(objects, start=1):
-        offsets.append(len(pdf))
-        pdf.extend(f"{index} 0 obj\n".encode("ascii"))
-        pdf.extend(obj)
-        pdf.extend(b"\nendobj\n")
-
-    xref_offset = len(pdf)
-    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    pdf.extend(b"0000000000 65535 f \n")
-
-    for offset in offsets[1:]:
-        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
-
-    pdf.extend(
-        (
-            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
-            f"startxref\n{xref_offset}\n%%EOF"
-        ).encode("ascii")
-    )
-
-    return bytes(pdf)
-
-
-def supplier_pdf_report_response(filename, report, current_user):
-    summary = report.get("summary", {})
-    filters = report.get("filters", {})
-    generated_at = ist_timestamp_label()
-    generated_by = current_user.get("username") or current_user.get("email") or "System"
-    date_range = f"{filters.get('start_date') or 'All'} to {filters.get('end_date') or 'All'}"
-
-    lines = [
-        "Smart Inventory Sales Monitoring System",
-        "Supplier Report",
-        f"Generated By: {generated_by} ({current_user.get('role', '-')})",
-        f"Generated Date: {generated_at}",
-        f"Selected Date Range: {date_range}",
-        "",
-        "Summary",
-        f"Total Suppliers: {summary.get('total_suppliers', 0)}",
-        f"Active Suppliers: {summary.get('active_suppliers', 0)}",
-        f"Total Purchase Orders: {summary.get('total_purchase_orders', 0)}",
-        f"Total Purchase Cost: {summary.get('total_purchase_cost', 0)}",
-        "",
-        "Supplier ID | Supplier Name | Email | Phone | Warehouse | Purchases | Status"
-    ]
-
-    if not report.get("items"):
-        lines.append("No supplier records found.")
-    else:
-        for row in report["items"]:
-            primary = (
-                f"{row.get('supplier_id', '-')} | {row.get('supplier_name', '-')} | "
-                f"{row.get('email', '-')} | {row.get('phone', '-')} | "
-                f"{row.get('warehouse_id') or '-'} {row.get('warehouse_name') or ''} | "
-                f"{row.get('purchase_orders', 0)} | {row.get('status', 'Active')}"
-            )
-            lines.extend(wrap_pdf_line(primary, 104))
-            address = f"Address: {row.get('address') or '-'}"
-            lines.extend(f"  {line}" for line in wrap_pdf_line(address, 100))
-
-    pages = []
-    rows_per_page = 44
-    for offset in range(0, len(lines), rows_per_page):
-        page = lines[offset:offset + rows_per_page]
-        page_number = len(pages) + 1
-        page.append("")
-        page.append(f"Page {page_number}")
-        pages.append(page)
-
-    return Response(
-        content=build_text_pdf_document(pages),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        }
-    )
-
-def build_pdf_report(title, summary, rows):
-    lines = [
-        "Smart Inventory Sales Monitoring System",
-        title,
-        "",
-        "Summary"
-    ]
-
-    for key, value in summary.items():
-        lines.append(f"{key}: {value}")
-
-    lines.extend(["", "Report Items"])
-    if not rows:
-        lines.append("No records")
-    else:
-        for index, row in enumerate(rows[:25], start=1):
-            preview = ", ".join(
-                f"{key}: {value}"
-                for key, value in list(row.items())[:6]
-            )
-            lines.append(f"{index}. {preview}")
-
-        if len(rows) > 25:
-            lines.append(f"... {len(rows) - 25} more records in report")
-
-    content_lines = [
-        "BT",
-        "/F1 18 Tf",
-        "50 780 Td",
-        f"({escape_pdf_text(lines[0])}) Tj",
-        "/F1 14 Tf",
-        "0 -28 Td",
-        f"({escape_pdf_text(lines[1])}) Tj",
-        "/F1 9 Tf"
-    ]
-
-    for line in lines[2:]:
-        content_lines.extend([
-            "0 -14 Td",
-            f"({escape_pdf_text(line[:110])}) Tj"
-        ])
-
-    content_lines.append("ET")
-    content = "\n".join(content_lines).encode("latin-1", errors="replace")
-
-    objects = [
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            b"/Resources << /Font << /F1 4 0 R >> >> "
-            b"/Contents 5 0 R >>"
-        ),
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        (
-            b"<< /Length " + str(len(content)).encode("ascii") +
-            b" >>\nstream\n" + content + b"\nendstream"
-        )
-    ]
-
-    pdf = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-
-    for index, obj in enumerate(objects, start=1):
-        offsets.append(len(pdf))
-        pdf.extend(f"{index} 0 obj\n".encode("ascii"))
-        pdf.extend(obj)
-        pdf.extend(b"\nendobj\n")
-
-    xref_offset = len(pdf)
-    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    pdf.extend(b"0000000000 65535 f \n")
-
-    for offset in offsets[1:]:
-        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
-
-    pdf.extend(
-        (
-            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
-            f"startxref\n{xref_offset}\n%%EOF"
-        ).encode("ascii")
-    )
-
-    return bytes(pdf)
-
-
-def pdf_report_response(filename, title, summary, rows):
-    return Response(
-        content=build_pdf_report(title, summary, rows),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        }
-    )
-
 
 def require_reportlab():
     try:
@@ -2495,7 +2278,7 @@ def make_summary_cards(cards, rl):
         fontName="Helvetica-Bold",
         fontSize=12,
         leading=14,
-        textColor=colors.HexColor("#0F766E"),
+        textColor=colors.HexColor("#1D4ED8"),
         alignment=rl["TA_CENTER"]
     )
     card_cells = []
@@ -2508,12 +2291,12 @@ def make_summary_cards(cards, rl):
     card_width = min(35, 180 / max(len(card_cells), 1)) * mm
     table = Table([card_cells], colWidths=[card_width] * len(card_cells), hAlign="LEFT")
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
-        ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#D7E4F2")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EFF6FF")),
+        ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#CBD5E1")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6)
     ]))
@@ -2528,18 +2311,18 @@ def make_key_value_table(title, rows, rl):
     colors = rl["colors"]
     styles = get_enterprise_pdf_styles(rl)
     data = [[Paragraph(title, styles["section"]), ""]]
-    data.extend([[Paragraph(k, styles["cellMuted"]), Paragraph(safe_report_text(v), styles["cell"])] for k, v in rows])
+    data.extend([[Paragraph(safe_report_text(k), styles["cellMuted"]), Paragraph(safe_report_text(v), styles["cell"])] for k, v in rows])
     table = Table(data, colWidths=[85 * rl["mm"], 85 * rl["mm"]], hAlign="LEFT")
     table.setStyle(TableStyle([
         ("SPAN", (0, 0), (-1, 0)),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E0F2FE")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#075985")),
-        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#D7E4F2")),
-        ("INNERGRID", (0, 1), (-1, -1), 0.4, colors.HexColor("#E2E8F0")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#DBEAFE")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1E3A5F")),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#CBD5E1")),
+        ("INNERGRID", (0, 1), (-1, -1), 0.4, colors.HexColor("#CBD5E1")),
         ("BACKGROUND", (0, 1), (-1, -1), colors.white),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6)
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7)
     ]))
     return table
 
@@ -2548,17 +2331,32 @@ def get_enterprise_pdf_styles(rl):
     colors = rl["colors"]
     ParagraphStyle = rl["ParagraphStyle"]
     return {
-        "title": ParagraphStyle("title", fontName="Helvetica-Bold", fontSize=16, leading=18, textColor=colors.HexColor("#0F172A")),
-        "subtitle": ParagraphStyle("subtitle", fontName="Helvetica", fontSize=8, leading=10, textColor=colors.HexColor("#475569")),
-        "section": ParagraphStyle("section", fontName="Helvetica-Bold", fontSize=10, leading=12, textColor=colors.HexColor("#0F172A")),
-        "cell": ParagraphStyle("cell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1E293B")),
-        "cellMuted": ParagraphStyle("cellMuted", fontName="Helvetica-Bold", fontSize=6.1, leading=7.8, textColor=colors.HexColor("#475569")),
-        "small": ParagraphStyle("small", fontName="Helvetica", fontSize=7, leading=9, textColor=colors.HexColor("#64748B")),
-        "right": ParagraphStyle("right", fontName="Helvetica", fontSize=7, leading=9, textColor=colors.HexColor("#475569"), alignment=rl["TA_RIGHT"]),
-        "centerCell": ParagraphStyle("centerCell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1E293B"), alignment=rl["TA_CENTER"]),
-        "idCell": ParagraphStyle("idCell", fontName="Helvetica-Bold", fontSize=6.2, leading=8.2, textColor=colors.HexColor("#0F172A"), alignment=rl["TA_CENTER"]),
-        "numCell": ParagraphStyle("numCell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1E293B"), alignment=rl["TA_RIGHT"])
+        "title": ParagraphStyle("title", fontName="Helvetica-Bold", fontSize=16, leading=18, textColor=colors.HexColor("#1E3A5F")),
+        "subtitle": ParagraphStyle("subtitle", fontName="Helvetica", fontSize=8, leading=10, textColor=colors.HexColor("#64748B")),
+        "section": ParagraphStyle("section", fontName="Helvetica-Bold", fontSize=10, leading=12, textColor=colors.HexColor("#1E3A5F")),
+        "cell": ParagraphStyle("cell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1F2937")),
+        "cellMuted": ParagraphStyle("cellMuted", fontName="Helvetica-Bold", fontSize=6.1, leading=7.8, textColor=colors.HexColor("#64748B")),
+        "tableHeader": ParagraphStyle("tableHeader", fontName="Helvetica-Bold", fontSize=6.2, leading=8.0, textColor=colors.white, alignment=rl["TA_CENTER"]),
+        "small": ParagraphStyle("small", fontName="Helvetica", fontSize=7, leading=9, textColor=colors.HexColor("#6B7280")),
+        "right": ParagraphStyle("right", fontName="Helvetica", fontSize=7, leading=9, textColor=colors.HexColor("#64748B"), alignment=rl["TA_RIGHT"]),
+        "centerCell": ParagraphStyle("centerCell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1F2937"), alignment=rl["TA_CENTER"]),
+        "positiveCell": ParagraphStyle("positiveCell", fontName="Helvetica-Bold", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#15803D"), alignment=rl["TA_CENTER"]),
+        "warningCell": ParagraphStyle("warningCell", fontName="Helvetica-Bold", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#D97706"), alignment=rl["TA_CENTER"]),
+        "criticalCell": ParagraphStyle("criticalCell", fontName="Helvetica-Bold", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#DC2626"), alignment=rl["TA_CENTER"]),
+        "idCell": ParagraphStyle("idCell", fontName="Helvetica-Bold", fontSize=6.2, leading=8.2, textColor=colors.HexColor("#1E3A5F"), alignment=rl["TA_CENTER"]),
+        "numCell": ParagraphStyle("numCell", fontName="Helvetica", fontSize=6.0, leading=7.6, textColor=colors.HexColor("#1F2937"), alignment=rl["TA_RIGHT"])
     }
+
+
+def pdf_status_style(value, styles):
+    status = safe_report_text(value).strip().lower()
+    if any(term in status for term in ("critical", "out of stock", "inactive", "failed", "cancelled")):
+        return styles["criticalCell"]
+    if any(term in status for term in ("warning", "low", "pending", "partial")):
+        return styles["warningCell"]
+    if any(term in status for term in ("active", "completed", "healthy", "paid", "success")):
+        return styles["positiveCell"]
+    return styles["centerCell"]
 
 
 def report_logo_path():
@@ -2589,22 +2387,23 @@ def draw_enterprise_header_footer(canvas, doc, report_title, generated_by, gener
     else:
         canvas.setFillColor(colors.HexColor("#2563EB"))
         canvas.roundRect(32, height - 58, 28, 28, 5, fill=1, stroke=0)
-    canvas.setFillColor(colors.HexColor("#0F172A"))
+    canvas.setFillColor(colors.HexColor("#1E3A5F"))
     canvas.setFont("Helvetica-Bold", 12)
     canvas.drawString(68, height - 34, "Smart Inventory")
     canvas.setFont("Helvetica", 8)
-    canvas.setFillColor(colors.HexColor("#64748B"))
+    canvas.setFillColor(colors.HexColor("#6B7280"))
     canvas.drawString(68, height - 46, "Sales Monitoring System")
-    canvas.setFillColor(colors.HexColor("#0F766E"))
+    canvas.setFillColor(colors.HexColor("#1E3A5F"))
     canvas.setFont("Helvetica-Bold", 13)
     canvas.drawRightString(width - 32, height - 34, report_title)
     canvas.setFont("Helvetica", 7)
-    canvas.setFillColor(colors.HexColor("#475569"))
+    canvas.setFillColor(colors.HexColor("#64748B"))
     canvas.drawRightString(width - 32, height - 46, f"Generated On: {generated_on}")
-    canvas.setStrokeColor(colors.HexColor("#CBD5E1"))
+    canvas.setStrokeColor(colors.HexColor("#2563EB"))
+    canvas.setLineWidth(1.1)
     canvas.line(32, height - 68, width - 32, height - 68)
     canvas.setFont("Helvetica", 7)
-    canvas.setFillColor(colors.HexColor("#64748B"))
+    canvas.setFillColor(colors.HexColor("#6B7280"))
     canvas.drawString(32, 28, "Smart Inventory Sales Monitoring System")
     canvas.drawCentredString(width / 2, 28, f"Generated By: {generated_by} | Date Range: {date_range} | Warehouse: {warehouse}")
     page = page_number or doc.page
@@ -2614,6 +2413,7 @@ def draw_enterprise_header_footer(canvas, doc, report_title, generated_by, gener
 
 
 def build_enterprise_pdf(filename, report_title, summary_cards, columns, rows, insights, chart_sections, current_user, filters):
+    print(f"[reports] ACTIVE_GENERATOR=enterprise_pdf_v3_blue_corporate report={report_title} filename={filename}")
     total_start = time.perf_counter()
     rl = require_reportlab()
     colors = rl["colors"]
@@ -2660,7 +2460,7 @@ def build_enterprise_pdf(filename, report_title, summary_cards, columns, rows, i
     story.append(Paragraph("Detailed Records", styles["section"]))
     id_columns = [key for key, _, kind, _ in columns if kind == "id"]
     rows = sort_records_by_numeric_id(rows, id_columns)
-    table_data = [[Paragraph(label, styles["cellMuted"] ) for _, label, _, _ in columns]]
+    table_data = [[Paragraph(label, styles["tableHeader"] ) for _, label, _, _ in columns]]
     use_row_images = len(rows) <= 100
     for index, row in enumerate(rows, start=1):
         row_cells = []
@@ -2690,6 +2490,8 @@ def build_enterprise_pdf(filename, report_title, summary_cards, columns, rows, i
                 row_cells.append(Paragraph(report_number(value), styles["numCell"]))
             elif kind == "id":
                 row_cells.append(Paragraph(safe_report_text(value), styles["idCell"]))
+            elif key in {"status", "stock_status"}:
+                row_cells.append(Paragraph(safe_report_text(value), pdf_status_style(value, styles)))
             elif kind == "center":
                 row_cells.append(Paragraph(safe_report_text(value), styles["centerCell"]))
             else:
@@ -2703,7 +2505,7 @@ def build_enterprise_pdf(filename, report_title, summary_cards, columns, rows, i
     records_table = LongTable(table_data, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
     records_table.splitByRow = 1
     records_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0F766E")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E40AF")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, 0), 6.2),
@@ -2711,8 +2513,8 @@ def build_enterprise_pdf(filename, report_title, summary_cards, columns, rows, i
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5.5),
         ("LEFTPADDING", (0, 0), (-1, -1), 3.5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 3.5)
     ]))
@@ -3181,6 +2983,15 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     if str(user.get("status", "Active")).lower() not in {"active", "enabled"}:
         login_log("inactive account blocked")
         raise HTTPException(status_code=403, detail="Account inactive or unauthorized.")
+
+    if password_needs_rehash(stored_password):
+        await run_in_threadpool(
+            users_collection.update_one,
+            {"_id": user["_id"]},
+            password_update_document(password)
+        )
+        user = await run_in_threadpool(users_collection.find_one, {"_id": user["_id"]}) or user
+        login_log("legacy password hash upgraded")
 
     clear_failed_login(email_identifier, request)
     login_log("failed-login counters cleared")
@@ -7207,7 +7018,7 @@ def export_sales_report_pdf(
             product_id
         )
         query_elapsed = time.perf_counter() - query_start
-        filename = f"sales_{period}_report.pdf"
+        filename = report_filename(f"sales_{period}_report", "pdf")
         response = sales_enterprise_pdf_response(
             filename,
             f"{period.title()} Sales Report",
@@ -7818,7 +7629,7 @@ def export_inventory_report_pdf(
             current_user=current_user
         )
         query_elapsed = time.perf_counter() - query_start
-        filename = "inventory_report.pdf"
+        filename = report_filename("inventory_report", "pdf")
         response = inventory_pdf_report_response(filename, report, current_user)
         total_elapsed = time.perf_counter() - request_start
         print(f"[reports] Inventory PDF timings query_prep={query_elapsed:.2f}s request_total={total_elapsed:.2f}s")
@@ -7891,7 +7702,7 @@ def export_supplier_report_pdf(
             current_user=current_user
         )
         query_elapsed = time.perf_counter() - query_start
-        filename = "supplier_report.pdf"
+        filename = report_filename("supplier_report", "pdf")
         response = supplier_enterprise_pdf_response(filename, report, current_user)
         total_elapsed = time.perf_counter() - request_start
         print(f"[reports] Supplier PDF timings query_prep={query_elapsed:.2f}s request_total={total_elapsed:.2f}s")

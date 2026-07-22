@@ -23,3 +23,9 @@ npm-debug.log
 .DS_Store
 Thumbs.db
 *.log
+.env.development
+.env.production
+logs
+exports
+!.env.development.example
+!.env.production.example
