@@ -2,7 +2,7 @@ const GOOGLE_CLIENT_ID =
   "818713072122-g3aln31415tecrea2hv2nj72htd1ckna.apps.googleusercontent.com";
 
 const RECAPTCHA_SITE_KEY =
-  "6Le6UVgtAAAAAFsyBML3xCvwmV_KidonmaQqfsA5";
+  "6LfmT1gtAAAAAH6p3IGkF02uFI-EZRQ5Q1VzoeDT";
 
 window.__recaptchaLoaded = false;
 
