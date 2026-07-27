@@ -88,7 +88,7 @@ button, input { font: inherit; }
 .google-signin-host { display: grid; place-items: center; overflow: hidden; border: 0; padding: 0; background: transparent; }.google-signin-host > div { max-width: 100%; }
 
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px 1fr; }
-.sidebar { padding: 22px; color: #fff; background: #071b3a; }.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: var(--blue); font-weight: 700; }.brand h1 { margin: 0; font-size: 20px; }.brand p { margin: 4px 0 0; color: #b7c9ef; }.nav { display: grid; gap: 8px; }.nav-link { padding: 12px; border: 0; border-radius: 8px; color: #dbeafe; background: transparent; text-align: left; cursor: pointer; }.nav-link.active, .nav-link:hover { color: #fff; background: var(--blue); }.main { padding: 28px; }.topbar { display: flex; align-items: center; justify-content: space-between; }.topbar h2 { margin: 0; font-size: 28px; }.topbar p { color: var(--muted); }.topbar button { height: 40px; border: 0; border-radius: 6px; padding: 0 14px; color: #fff; background: var(--blue); cursor: pointer; }.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 25px 0; }.metric, .panel, .status { padding: 20px; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.06); }.metric span { color: var(--muted); }.metric strong { display: block; margin-top: 10px; font-size: 28px; }.status { color: #065f46; background: #d1fae5; }.status.error { color: #991b1b; background: #fee2e2; }
+.sidebar { padding: 22px; color: #334155; background: #fff; }.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: var(--blue); font-weight: 700; }.brand h1 { margin: 0; font-size: 20px; }.brand p { margin: 4px 0 0; color: #b7c9ef; }.nav { display: grid; gap: 8px; }.nav-link { padding: 12px; border: 0; border-radius: 8px; color: #dbeafe; background: transparent; text-align: left; cursor: pointer; }.nav-link.active, .nav-link:hover { color: #fff; background: var(--blue); }.main { padding: 28px; }.topbar { display: flex; align-items: center; justify-content: space-between; }.topbar h2 { margin: 0; font-size: 28px; }.topbar p { color: var(--muted); }.topbar button { height: 40px; border: 0; border-radius: 6px; padding: 0 14px; color: #fff; background: var(--blue); cursor: pointer; }.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 25px 0; }.metric, .panel, .status { padding: 20px; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.06); }.metric span { color: var(--muted); }.metric strong { display: block; margin-top: 10px; font-size: 28px; }.status { color: #065f46; background: #d1fae5; }.status.error { color: #991b1b; background: #fee2e2; }
 .panel h3 { margin-top: 0; }.table-wrap { overflow: auto; margin-top: 16px; border: 1px solid #e0e7f2; border-radius: 8px; }.table-wrap table { width: 100%; min-width: 760px; border-collapse: collapse; }.table-wrap th, .table-wrap td { padding: 12px 14px; border-bottom: 1px solid #e8edf5; text-align: left; white-space: nowrap; }.table-wrap th { color: #46536a; background: #f5f8ff; font-size: 12px; text-transform: capitalize; }.table-wrap td { color: #344054; font-size: 13px; }.error-panel { color: #b42318; background: #fff1f0; }
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; color: #526176; font-size: 13px; }.pagination button { height: 36px; border: 1px solid #cbd8ee; border-radius: 6px; padding: 0 12px; color: #1d4ed8; background: #fff; cursor: pointer; }.pagination button:disabled { cursor: not-allowed; opacity: .45; }
 .product-form-panel { margin-bottom: 20px; padding: 20px; border: 1px solid #d9e4f5; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.05); }.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }.section-heading h3 { margin: 0; }.section-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }.product-form { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 14px; margin-top: 18px; }.product-form label { display: grid; gap: 6px; color: #344054; font-size: 12px; font-weight: 700; }.product-form input { width: 100%; height: 40px; border: 1px solid #d5dfed; border-radius: 6px; padding: 0 10px; color: var(--ink); background: #fff; }.product-form button, .secondary-action, .table-action { height: 40px; align-self: end; border: 0; border-radius: 6px; padding: 0 12px; color: #fff; background: #2563eb; font-weight: 700; cursor: pointer; }.secondary-action { color: #1d4ed8; background: #e8efff; }.table-action { height: 30px; margin-right: 6px; padding: 0 8px; font-size: 12px; }.delete-product { color: #b42318; background: #fee4e2; }.action-cell { min-width: 130px; }.product-message { margin: 14px 0 0; color: #087443; font-size: 13px; font-weight: 700; }.product-message.error { color: #b42318; }
@@ -614,64 +614,6 @@ body.modal-open { overflow: hidden; }
   transform: translateX(20px);
 }
 
-.theme-choice-group {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.theme-choice {
-  display: grid;
-  min-height: 112px;
-  align-content: center;
-  justify-items: center;
-  gap: 7px;
-  border: 1px solid #dbe6f5;
-  border-radius: 18px;
-  padding: 14px;
-  color: #0f172a;
-  background: #f8fbff;
-  text-align: center;
-}
-
-.theme-choice input {
-  display: none;
-}
-
-.theme-choice span {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border-radius: 14px;
-  color: #2563eb;
-  background: #dbeafe;
-}
-
-.theme-choice strong {
-  font-size: 13px;
-}
-
-.theme-choice small {
-  color: #10b981;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.theme-choice.active {
-  border-color: #bcd2ff;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, .08);
-}
-
-.theme-choice.disabled {
-  cursor: not-allowed;
-  opacity: .58;
-}
-
-.theme-choice.disabled small {
-  color: #94a3b8;
-}
 
 .settings-info-list {
   display: grid;
@@ -779,46 +721,6 @@ body.modal-open { overflow: hidden; }
   height: 17px;
 }
 
-@media (max-width: 1100px) {
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 620px) {
-  .settings-hero,
-  .settings-card,
-  .settings-actions {
-    border-radius: 18px;
-    padding: 18px;
-  }
-
-  .settings-hero h3 {
-    font-size: 22px;
-  }
-
-  .theme-choice-group {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-toggle-row,
-  .settings-info-list div,
-  .about-settings-list div {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .settings-actions {
-    flex-direction: column-reverse;
-  }
-
-  .settings-reset-button,
-  .settings-save-button {
-    width: 100%;
-  }
-}
-
-/* Functional settings: dark theme, compact layout, and sidebar auto-collapse */
 .settings-card-wide {
   grid-column: 1 / -1;
 }
@@ -872,165 +774,39 @@ body.modal-open { overflow: hidden; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-html[data-theme="dark"] body {
-  color: #e5e7eb;
-  background: #0b1120;
+@media (max-width: 1100px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-html[data-theme="dark"] .app-shell,
-html[data-theme="dark"] .main {
-  background: #0b1120;
-}
+@media (max-width: 620px) {
+  .settings-hero,
+  .settings-card,
+  .settings-actions {
+    border-radius: 18px;
+    padding: 18px;
+  }
 
-html[data-theme="dark"] .sidebar,
-html[data-theme="dark"] .topbar,
-html[data-theme="dark"] .panel,
-html[data-theme="dark"] .kpi-card,
-html[data-theme="dark"] .settings-card,
-html[data-theme="dark"] .settings-actions,
-html[data-theme="dark"] .dashboard-popover,
-html[data-theme="dark"] .modal-card,
-html[data-theme="dark"] .product-code-modal,
-html[data-theme="dark"] .table-card,
-html[data-theme="dark"] .view-card,
-html[data-theme="dark"] .data-card,
-html[data-theme="dark"] .form-card,
-html[data-theme="dark"] .stats-card,
-html[data-theme="dark"] .auth-card {
-  border-color: #23314a;
-  color: #e5e7eb;
-  background: #111827;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, .28);
-}
+  .settings-hero h3 {
+    font-size: 22px;
+  }
 
-html[data-theme="dark"] .settings-hero,
-html[data-theme="dark"] .about-settings-card,
-html[data-theme="dark"] .inventory-status-card,
-html[data-theme="dark"] .sidebar-profile,
-html[data-theme="dark"] .header-profile,
-html[data-theme="dark"] .dashboard-search,
-html[data-theme="dark"] .date-card,
-html[data-theme="dark"] .notification-button,
-html[data-theme="dark"] .search-result,
-html[data-theme="dark"] .notification-item,
-html[data-theme="dark"] .settings-toggle-row,
-html[data-theme="dark"] .settings-info-list div,
-html[data-theme="dark"] .about-settings-list div,
-html[data-theme="dark"] .about-project-summary,
-html[data-theme="dark"] .theme-choice,
-html[data-theme="dark"] .code-grid article,
-html[data-theme="dark"] .code-preview,
-html[data-theme="dark"] .manual-scan-form input {
-  border-color: #23314a;
-  color: #e5e7eb;
-  background: #172033;
-}
+  .settings-toggle-row,
+  .settings-info-list div,
+  .about-settings-list div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-html[data-theme="dark"] h1,
-html[data-theme="dark"] h2,
-html[data-theme="dark"] h3,
-html[data-theme="dark"] strong,
-html[data-theme="dark"] .brand h1,
-html[data-theme="dark"] .dashboard-intro h2,
-html[data-theme="dark"] .settings-hero h3,
-html[data-theme="dark"] .settings-card header h3,
-html[data-theme="dark"] .theme-choice strong,
-html[data-theme="dark"] .about-project-summary strong,
-html[data-theme="dark"] .product-code-summary strong,
-html[data-theme="dark"] .code-grid h3 {
-  color: #f8fafc;
-}
+  .settings-actions {
+    flex-direction: column-reverse;
+  }
 
-html[data-theme="dark"] p,
-html[data-theme="dark"] small,
-html[data-theme="dark"] span,
-html[data-theme="dark"] .brand p,
-html[data-theme="dark"] .dashboard-intro p,
-html[data-theme="dark"] .settings-hero p,
-html[data-theme="dark"] .settings-card header p,
-html[data-theme="dark"] .settings-toggle-row small,
-html[data-theme="dark"] .about-project-summary p,
-html[data-theme="dark"] .about-project-summary small,
-html[data-theme="dark"] .product-code-summary small,
-html[data-theme="dark"] .scanner-body p {
-  color: #94a3b8;
-}
-
-html[data-theme="dark"] input,
-html[data-theme="dark"] select,
-html[data-theme="dark"] textarea,
-html[data-theme="dark"] .settings-field select,
-html[data-theme="dark"] .auth-form input,
-html[data-theme="dark"] .auth-form select,
-html[data-theme="dark"] .modal-form input,
-html[data-theme="dark"] .modal-form select,
-html[data-theme="dark"] .reset-page-form input,
-html[data-theme="dark"] .dashboard-search input {
-  border-color: #334155;
-  color: #f8fafc;
-  background: #0f172a;
-}
-
-html[data-theme="dark"] input::placeholder,
-html[data-theme="dark"] textarea::placeholder,
-html[data-theme="dark"] .dashboard-search input::placeholder {
-  color: #64748b;
-}
-
-html[data-theme="dark"] table,
-html[data-theme="dark"] thead,
-html[data-theme="dark"] tbody,
-html[data-theme="dark"] tr,
-html[data-theme="dark"] td,
-html[data-theme="dark"] th {
-  border-color: #23314a;
-}
-
-html[data-theme="dark"] th {
-  color: #cbd5e1;
-  background: #172033;
-}
-
-html[data-theme="dark"] td {
-  color: #e5e7eb;
-}
-
-html[data-theme="dark"] .nav-link {
-  color: #cbd5e1;
-}
-
-html[data-theme="dark"] .nav-link:hover,
-html[data-theme="dark"] .nav-link.active {
-  color: #fff;
-  background: linear-gradient(135deg, #4f46e5, #2563eb);
-}
-
-html[data-theme="dark"] .settings-reset-button,
-html[data-theme="dark"] .settings-outline-button,
-html[data-theme="dark"] .period-button,
-html[data-theme="dark"] .view-all,
-html[data-theme="dark"] .google-button {
-  border-color: #334155;
-  color: #dbeafe;
-  background: #0f172a;
-}
-
-html[data-theme="dark"] .modal-overlay {
-  background: rgba(2, 6, 23, .72);
-}
-
-html[data-theme="dark"] .status-active {
-  color: #86efac;
-  background: rgba(34, 197, 94, .15);
-}
-
-html[data-theme="dark"] .theme-choice.active {
-  border-color: #60a5fa;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, .18);
-}
-
-html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #334155;
+  .settings-reset-button,
+  .settings-save-button {
+    width: 100%;
+  }
 }
 
 body.compact-layout .main {
@@ -1092,7 +868,7 @@ body.sidebar-auto-collapse .nav-link svg {
   }
 }
 
-/* Settings About section theme tokens and contrast fixes */
+/* Settings About section tokens and contrast fixes */
 .settings-page {
   --settings-surface: #ffffff;
   --settings-surface-soft: #fbfdff;
@@ -1104,19 +880,6 @@ body.sidebar-auto-collapse .nav-link svg {
   --settings-subtle: #94a3b8;
   --settings-accent: #2563eb;
   --settings-accent-soft: #dbeafe;
-}
-
-html[data-theme="dark"] .settings-page {
-  --settings-surface: #111827;
-  --settings-surface-soft: #172033;
-  --settings-surface-muted: #0f172a;
-  --settings-border: #334155;
-  --settings-border-strong: #475569;
-  --settings-text: #f8fafc;
-  --settings-muted: #cbd5e1;
-  --settings-subtle: #94a3b8;
-  --settings-accent: #60a5fa;
-  --settings-accent-soft: rgba(37, 99, 235, .18);
 }
 
 .settings-page .about-settings-card {
@@ -1154,28 +917,6 @@ html[data-theme="dark"] .settings-page {
   border-color: var(--settings-border-strong);
 }
 
-html[data-theme="dark"] .settings-page .about-settings-card,
-html[data-theme="dark"] .settings-page .about-project-summary,
-html[data-theme="dark"] .settings-page .about-settings-list div {
-  box-shadow: 0 16px 36px rgba(0, 0, 0, .22);
-}
-
-html[data-theme="dark"] .settings-page .about-settings-card .settings-card-icon.blue {
-  color: #93c5fd;
-  background: rgba(37, 99, 235, .18);
-}
-
-html[data-theme="dark"] .settings-page .about-settings-list dd,
-html[data-theme="dark"] .settings-page .about-project-summary strong {
-  color: #f8fafc;
-}
-
-html[data-theme="dark"] .settings-page .about-settings-list dt,
-html[data-theme="dark"] .settings-page .about-project-summary p,
-html[data-theme="dark"] .settings-page .about-project-summary small {
-  color: #cbd5e1;
-}
-
 /* Product image placeholder column */
 .product-image-placeholder {
   display: inline-flex;
@@ -1199,426 +940,6 @@ html[data-theme="dark"] .settings-page .about-project-summary small {
   height: 16px;
   flex: 0 0 auto;
 }
-/* Full application dark mode contrast layer */
-html[data-theme="dark"] {
-  --app-bg: #0f172a;
-  --app-sidebar: #111827;
-  --app-card: #1e293b;
-  --app-card-soft: #172033;
-  --app-table: #1e293b;
-  --app-input: #111827;
-  --app-border: #334155;
-  --app-border-soft: #253247;
-  --app-text: #f8fafc;
-  --app-text-secondary: #cbd5e1;
-  --app-text-muted: #94a3b8;
-  --app-blue: #3b82f6;
-  --ink: var(--app-text);
-  --muted: var(--app-text-secondary);
-  --line: var(--app-border);
-}
-
-html[data-theme="dark"] body,
-html[data-theme="dark"] .app-shell,
-html[data-theme="dark"] .main {
-  color: var(--app-text);
-  background: var(--app-bg) !important;
-}
-
-html[data-theme="dark"] .sidebar {
-  color: var(--app-text-secondary);
-  background: var(--app-sidebar) !important;
-  border-right-color: var(--app-border);
-}
-
-html[data-theme="dark"] .brand h1,
-html[data-theme="dark"] .sidebar-profile strong,
-html[data-theme="dark"] .header-profile strong,
-html[data-theme="dark"] .dashboard-intro h2,
-html[data-theme="dark"] .section-heading h3,
-html[data-theme="dark"] .panel h3,
-html[data-theme="dark"] .settings-card header h3,
-html[data-theme="dark"] .modal-header h2,
-html[data-theme="dark"] .profile-summary h3,
-html[data-theme="dark"] .inventory-health-toolbar h3,
-html[data-theme="dark"] .notification-menu h4,
-html[data-theme="dark"] .menu-account strong,
-html[data-theme="dark"] .at-a-glance h3,
-html[data-theme="dark"] .inventory-health-banner strong,
-html[data-theme="dark"] .inventory-health-empty strong {
-  color: var(--app-text) !important;
-}
-
-html[data-theme="dark"] .brand p,
-html[data-theme="dark"] .dashboard-intro p,
-html[data-theme="dark"] .section-heading p,
-html[data-theme="dark"] .sidebar-profile small,
-html[data-theme="dark"] .header-profile small,
-html[data-theme="dark"] .kpi-card small,
-html[data-theme="dark"] .panel p,
-html[data-theme="dark"] .settings-card header p,
-html[data-theme="dark"] .profile-summary p,
-html[data-theme="dark"] .profile-information small,
-html[data-theme="dark"] .search-result span,
-html[data-theme="dark"] .notification-item span,
-html[data-theme="dark"] .notification-empty span,
-html[data-theme="dark"] .notification-empty small,
-html[data-theme="dark"] .menu-account span,
-html[data-theme="dark"] .inventory-status-card p,
-html[data-theme="dark"] .inventory-status-card small,
-html[data-theme="dark"] .inventory-health-banner p,
-html[data-theme="dark"] .inventory-health-summary span,
-html[data-theme="dark"] .at-a-glance span,
-html[data-theme="dark"] .empty-menu,
-html[data-theme="dark"] .custom-date-range label {
-  color: var(--app-text-secondary) !important;
-}
-
-html[data-theme="dark"] .panel,
-html[data-theme="dark"] .metric,
-html[data-theme="dark"] .kpi-card,
-html[data-theme="dark"] .at-a-glance,
-html[data-theme="dark"] .product-form-panel,
-html[data-theme="dark"] .stock-update-panel,
-html[data-theme="dark"] .settings-card,
-html[data-theme="dark"] .settings-actions,
-html[data-theme="dark"] .modal-card,
-html[data-theme="dark"] .reset-card,
-html[data-theme="dark"] .dashboard-popover,
-html[data-theme="dark"] .sidebar-profile,
-html[data-theme="dark"] .header-profile,
-html[data-theme="dark"] .dashboard-search,
-html[data-theme="dark"] .date-card,
-html[data-theme="dark"] .notification-button,
-html[data-theme="dark"] .inventory-health-summary article,
-html[data-theme="dark"] .inventory-health-table,
-html[data-theme="dark"] .profile-information > div,
-html[data-theme="dark"] .settings-info-list div,
-html[data-theme="dark"] .settings-toggle-row,
-html[data-theme="dark"] .about-settings-list div,
-html[data-theme="dark"] .about-project-summary,
-html[data-theme="dark"] .theme-choice,
-html[data-theme="dark"] .code-grid article,
-html[data-theme="dark"] .code-preview,
-html[data-theme="dark"] .product-image-placeholder {
-  color: var(--app-text);
-  background: var(--app-card) !important;
-  border-color: var(--app-border) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, .22) !important;
-}
-
-html[data-theme="dark"] .settings-hero,
-html[data-theme="dark"] .inventory-status-card,
-html[data-theme="dark"] .inventory-health-banner,
-html[data-theme="dark"] .settings-page .about-settings-card {
-  color: var(--app-text);
-  background: linear-gradient(135deg, #1e293b, #172033) !important;
-  border-color: var(--app-border) !important;
-}
-
-html[data-theme="dark"] .inventory-status-card.status-healthy,
-html[data-theme="dark"] .inventory-status-card.status-warning,
-html[data-theme="dark"] .inventory-status-card.status-critical {
-  background: linear-gradient(135deg, #1e293b, #172033) !important;
-}
-
-html[data-theme="dark"] .inventory-status-card img {
-  opacity: .82;
-  mix-blend-mode: normal;
-}
-
-html[data-theme="dark"] .kpi-card strong,
-html[data-theme="dark"] .metric strong,
-html[data-theme="dark"] .at-a-glance strong,
-html[data-theme="dark"] .glance-metric strong,
-html[data-theme="dark"] .sales-overview .section-heading strong,
-html[data-theme="dark"] .donut strong,
-html[data-theme="dark"] .inventory-health-summary strong,
-html[data-theme="dark"] .profile-information strong,
-html[data-theme="dark"] .settings-info-list strong,
-html[data-theme="dark"] .about-settings-list dd,
-html[data-theme="dark"] .settings-toggle-row strong,
-html[data-theme="dark"] .settings-field span,
-html[data-theme="dark"] .product-form label,
-html[data-theme="dark"] .stock-update-form label,
-html[data-theme="dark"] .modal-form > label {
-  color: var(--app-text) !important;
-}
-
-html[data-theme="dark"] input,
-html[data-theme="dark"] select,
-html[data-theme="dark"] textarea,
-html[data-theme="dark"] .product-form input,
-html[data-theme="dark"] .product-form select,
-html[data-theme="dark"] .stock-update-form input,
-html[data-theme="dark"] .stock-update-form textarea,
-html[data-theme="dark"] .modal-form input,
-html[data-theme="dark"] .modal-form select,
-html[data-theme="dark"] .modal-form textarea,
-html[data-theme="dark"] .auth-form input,
-html[data-theme="dark"] .auth-form select,
-html[data-theme="dark"] .dashboard-search input,
-html[data-theme="dark"] .custom-date-range input,
-html[data-theme="dark"] .restock-queue-table input[type="number"],
-html[data-theme="dark"] .restock-queue-table select,
-html[data-theme="dark"] .manual-scan-form input {
-  color: var(--app-text) !important;
-  background: var(--app-input) !important;
-  border-color: var(--app-border) !important;
-  box-shadow: none !important;
-}
-
-html[data-theme="dark"] input::placeholder,
-html[data-theme="dark"] textarea::placeholder,
-html[data-theme="dark"] .dashboard-search input::placeholder {
-  color: var(--app-text-muted) !important;
-  opacity: 1;
-}
-
-html[data-theme="dark"] input:focus,
-html[data-theme="dark"] select:focus,
-html[data-theme="dark"] textarea:focus {
-  border-color: var(--app-blue) !important;
-  outline: 2px solid rgba(59, 130, 246, .28);
-  outline-offset: 1px;
-}
-
-html[data-theme="dark"] .table-wrap,
-html[data-theme="dark"] .inventory-health-table-wrap {
-  border-color: var(--app-border) !important;
-  background: var(--app-table) !important;
-}
-
-html[data-theme="dark"] table,
-html[data-theme="dark"] .table-wrap table,
-html[data-theme="dark"] .low-stock-table table,
-html[data-theme="dark"] .inventory-health-table {
-  color: var(--app-text-secondary);
-  background: var(--app-table) !important;
-}
-
-html[data-theme="dark"] th,
-html[data-theme="dark"] .table-wrap th,
-html[data-theme="dark"] .low-stock-table th,
-html[data-theme="dark"] .inventory-health-table th {
-  color: var(--app-text-secondary) !important;
-  background: #273449 !important;
-  border-bottom-color: var(--app-border) !important;
-}
-
-html[data-theme="dark"] td,
-html[data-theme="dark"] .table-wrap td,
-html[data-theme="dark"] .low-stock-table td,
-html[data-theme="dark"] .low-stock-table td:first-child,
-html[data-theme="dark"] .inventory-health-table td,
-html[data-theme="dark"] .inventory-health-table td:first-child {
-  color: var(--app-text) !important;
-  border-bottom-color: var(--app-border-soft) !important;
-  background: transparent !important;
-}
-
-html[data-theme="dark"] .nav-link {
-  color: var(--app-text-secondary) !important;
-}
-
-html[data-theme="dark"] .nav-link:hover {
-  color: #dbeafe !important;
-  background: #1e3a5f !important;
-}
-
-html[data-theme="dark"] .nav-link.active {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
-}
-
-html[data-theme="dark"] .dashboard-popover,
-html[data-theme="dark"] .search-results,
-html[data-theme="dark"] .notification-menu,
-html[data-theme="dark"] .profile-menu,
-html[data-theme="dark"] .date-range-menu {
-  background: var(--app-card) !important;
-  border-color: var(--app-border) !important;
-  color: var(--app-text) !important;
-}
-
-html[data-theme="dark"] .search-result,
-html[data-theme="dark"] .notification-item,
-html[data-theme="dark"] .notification-menu .notification-item,
-html[data-theme="dark"] .profile-menu button,
-html[data-theme="dark"] .date-option {
-  color: var(--app-text) !important;
-  background: var(--app-card) !important;
-  border-color: var(--app-border-soft) !important;
-}
-
-html[data-theme="dark"] .search-result:hover,
-html[data-theme="dark"] .notification-item:hover,
-html[data-theme="dark"] .notification-menu .notification-item:hover,
-html[data-theme="dark"] .profile-menu button:hover,
-html[data-theme="dark"] .date-option:hover,
-html[data-theme="dark"] .date-option.selected {
-  color: #dbeafe !important;
-  background: #273449 !important;
-}
-
-html[data-theme="dark"] .search-result strong,
-html[data-theme="dark"] .notification-item strong,
-html[data-theme="dark"] .notification-menu .notification-item strong,
-html[data-theme="dark"] .notification-empty strong {
-  color: var(--app-text) !important;
-}
-
-html[data-theme="dark"] .notification-item time {
-  color: var(--app-text-muted) !important;
-}
-
-html[data-theme="dark"] .modal-header,
-html[data-theme="dark"] .modal-footer,
-html[data-theme="dark"] .menu-account,
-html[data-theme="dark"] .custom-date-range,
-html[data-theme="dark"] .notification-menu h4,
-html[data-theme="dark"] .quick-actions button,
-html[data-theme="dark"] .at-a-glance .glance-metric,
-html[data-theme="dark"] .search-result + .search-result,
-html[data-theme="dark"] .notification-item + .notification-item,
-html[data-theme="dark"] .profile-menu button + .profile-menu button {
-  border-color: var(--app-border) !important;
-}
-
-html[data-theme="dark"] .modal-secondary-button,
-html[data-theme="dark"] .secondary-action,
-html[data-theme="dark"] .table-action,
-html[data-theme="dark"] .settings-outline-button,
-html[data-theme="dark"] .settings-reset-button,
-html[data-theme="dark"] .period-button,
-html[data-theme="dark"] .view-all,
-html[data-theme="dark"] .google-button,
-html[data-theme="dark"] .pagination button,
-html[data-theme="dark"] .health-actions button {
-  color: #dbeafe !important;
-  background: #172033 !important;
-  border-color: var(--app-border) !important;
-}
-
-html[data-theme="dark"] .modal-secondary-button:hover,
-html[data-theme="dark"] .secondary-action:hover,
-html[data-theme="dark"] .table-action:hover,
-html[data-theme="dark"] .settings-outline-button:hover,
-html[data-theme="dark"] .settings-reset-button:hover,
-html[data-theme="dark"] .period-button:hover,
-html[data-theme="dark"] .view-all:hover,
-html[data-theme="dark"] .google-button:hover,
-html[data-theme="dark"] .pagination button:hover,
-html[data-theme="dark"] .health-actions button:hover {
-  color: #ffffff !important;
-  background: #24324a !important;
-}
-
-html[data-theme="dark"] .settings-save-button,
-html[data-theme="dark"] .modal-primary-button,
-html[data-theme="dark"] .product-form button,
-html[data-theme="dark"] .stock-actions button,
-html[data-theme="dark"] .custom-date-range button,
-html[data-theme="dark"] .auth-form > button[type="submit"] {
-  color: #ffffff !important;
-  background: var(--app-blue) !important;
-  border-color: var(--app-blue) !important;
-}
-
-html[data-theme="dark"] .delete-product,
-html[data-theme="dark"] .danger-menu-action {
-  color: #fecaca !important;
-  background: rgba(239, 68, 68, .16) !important;
-}
-
-html[data-theme="dark"] .error-panel,
-html[data-theme="dark"] .modal-message,
-html[data-theme="dark"] .status.error {
-  color: #fecaca !important;
-  background: rgba(239, 68, 68, .14) !important;
-  border-color: rgba(239, 68, 68, .35) !important;
-}
-
-html[data-theme="dark"] .modal-message.success,
-html[data-theme="dark"] .product-message,
-html[data-theme="dark"] .dashboard-toast,
-html[data-theme="dark"] .status-active,
-html[data-theme="dark"] .active-badge {
-  color: #bbf7d0 !important;
-  background: rgba(16, 185, 129, .16) !important;
-  border-color: rgba(16, 185, 129, .32) !important;
-}
-
-html[data-theme="dark"] .alert-pill,
-html[data-theme="dark"] .health-status.low-stock {
-  color: #fde68a !important;
-  background: rgba(245, 158, 11, .16) !important;
-}
-
-html[data-theme="dark"] .health-status.critical,
-html[data-theme="dark"] .health-status.out-of-stock {
-  color: #fecaca !important;
-  background: rgba(239, 68, 68, .16) !important;
-}
-
-html[data-theme="dark"] .health-status.healthy {
-  color: #bbf7d0 !important;
-  background: rgba(34, 197, 94, .16) !important;
-}
-
-html[data-theme="dark"] .chart-grid span,
-html[data-theme="dark"] .chart-axis span,
-html[data-theme="dark"] .legend,
-html[data-theme="dark"] .legend strong,
-html[data-theme="dark"] .donut span,
-html[data-theme="dark"] .password-strength,
-html[data-theme="dark"] .password-strength small {
-  color: var(--app-text-secondary) !important;
-}
-
-html[data-theme="dark"] .modal-close,
-html[data-theme="dark"] .profile-more,
-html[data-theme="dark"] .menu-trigger,
-html[data-theme="dark"] .topbar .notification-button,
-html[data-theme="dark"] .topbar .header-profile {
-  color: var(--app-text-secondary) !important;
-  background: #172033 !important;
-  border-color: var(--app-border) !important;
-}
-
-html[data-theme="dark"] .modal-close:hover,
-html[data-theme="dark"] .profile-more:hover,
-html[data-theme="dark"] .menu-trigger:hover,
-html[data-theme="dark"] .topbar .notification-button:hover,
-html[data-theme="dark"] .topbar .header-profile:hover {
-  color: #ffffff !important;
-  background: #24324a !important;
-}
-
-html[data-theme="dark"] .brand-mark,
-html[data-theme="dark"] .profile-avatar,
-html[data-theme="dark"] .info-icon,
-html[data-theme="dark"] .kpi-icon,
-html[data-theme="dark"] .glance-icon,
-html[data-theme="dark"] .settings-card-icon,
-html[data-theme="dark"] .healthy-dot {
-  box-shadow: none !important;
-}
-
-html[data-theme="dark"] .product-image-placeholder {
-  color: var(--app-text-muted) !important;
-  background: #111827 !important;
-  border-style: dashed !important;
-}
-
-html[data-theme="dark"] ::-webkit-scrollbar-track {
-  background: #0f172a;
-}
-
-html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 999px;
-}
 
 .product-image-thumb {
   display: block;
@@ -1629,11 +950,6 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
   border: 1px solid #dbe5f3;
   background: #ffffff;
   padding: 4px;
-}
-
-html[data-theme="dark"] .product-image-thumb {
-  background: #f8fafc !important;
-  border-color: #334155 !important;
 }
 
 .product-image-thumb {
@@ -1674,15 +990,6 @@ html[data-theme="dark"] .product-image-thumb {
 .product-image-preview button {
   width: auto;
   align-self: center;
-}
-html[data-theme="dark"] .product-image-thumb,
-html[data-theme="dark"] .product-image-preview img {
-  border-color: #334155;
-  background: #0f172a;
-}
-html[data-theme="dark"] .product-image-preview {
-  border-color: #334155;
-  background: #111827;
 }
 @media (max-width: 760px) {
   .product-image-preview {
@@ -1801,26 +1108,6 @@ button:disabled,
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.62;
-}
-
-html[data-theme="dark"] .skeleton-panel span {
-  background: linear-gradient(90deg, #172033 0%, #1e293b 45%, #334155 100%);
-  background-size: 220% 100%;
-}
-
-html[data-theme="dark"] .skeleton-label {
-  color: var(--app-text-muted) !important;
-}
-
-html[data-theme="dark"] .error-panel {
-  color: #fecaca !important;
-  background: rgba(127, 29, 29, 0.28) !important;
-  border-color: rgba(248, 113, 113, 0.38) !important;
-}
-
-html[data-theme="dark"] .error-panel h3,
-html[data-theme="dark"] .error-panel p {
-  color: #fecaca !important;
 }
 
 @media (max-width: 1100px) {
@@ -1965,16 +1252,8 @@ html[data-theme="dark"] .error-panel p {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-html[data-theme="dark"] .warehouse-filter select {
-  color: var(--app-text, #f8fafc);
-  background: var(--app-input, #111827);
-  border-color: var(--app-border, #334155);
-}
-
 .report-warning { border: 1px solid #fde68a; color: #92400e; background: #fffbeb; }
 .report-warning p { color: #92400e; }
-html[data-theme="dark"] .report-warning { border-color: #854d0e; color: #facc15; background: #422006; }
-html[data-theme="dark"] .report-warning p { color: #fde68a; }
 
 /* Shared notification dropdown */
 .notification-menu {
@@ -2234,75 +1513,6 @@ html[data-theme="dark"] .report-warning p { color: #fde68a; }
   font-weight: 600;
 }
 
-html[data-theme="dark"] .notification-menu,
-html[data-theme="dark"] .notifications-panel,
-html[data-theme="dark"] .notifications-header {
-  color: var(--app-text, #f8fafc);
-  background: var(--app-card, #1e293b) !important;
-  border-color: var(--app-border, #334155);
-}
-
-html[data-theme="dark"] .notification-menu {
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-}
-
-html[data-theme="dark"] .notifications-header h3,
-html[data-theme="dark"] .notification-menu .notification-title,
-html[data-theme="dark"] .notification-empty strong {
-  color: var(--app-text, #f8fafc) !important;
-}
-
-html[data-theme="dark"] .notifications-unread-count {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.16);
-}
-
-html[data-theme="dark"] .mark-all-read-btn {
-  color: #bfdbfe;
-  background: rgba(59, 130, 246, 0.16);
-}
-
-html[data-theme="dark"] .mark-all-read-btn:hover,
-html[data-theme="dark"] .mark-all-read-btn:focus-visible {
-  color: #dbeafe;
-  background: rgba(59, 130, 246, 0.24);
-}
-
-html[data-theme="dark"] .notifications-list {
-  scrollbar-color: #475569 transparent;
-}
-
-html[data-theme="dark"] .notifications-list::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-
-html[data-theme="dark"] .notification-menu .notification-item {
-  color: var(--app-text, #f8fafc);
-  background: #172033 !important;
-  border-color: var(--app-border, #334155);
-}
-
-html[data-theme="dark"] .notification-menu .notification-item.unread {
-  background: #1d2a44 !important;
-  border-color: rgba(59, 130, 246, 0.42);
-}
-
-html[data-theme="dark"] .notification-menu .notification-item:hover,
-html[data-theme="dark"] .notification-menu .notification-item:focus-visible {
-  background: #24324a !important;
-  border-color: rgba(147, 197, 253, 0.5);
-}
-
-html[data-theme="dark"] .notification-menu .notification-message,
-html[data-theme="dark"] .notification-empty span {
-  color: var(--app-text-soft, #cbd5e1) !important;
-}
-
-html[data-theme="dark"] .notification-menu .notification-time,
-html[data-theme="dark"] .notification-empty svg {
-  color: var(--app-text-muted, #94a3b8) !important;
-}
-
 @media (max-width: 700px) {
   .notification-menu {
     position: fixed;
@@ -2345,9 +1555,96 @@ html[data-theme="dark"] .notification-empty svg {
 .inline-confirm-card p { margin: 0; padding: 0 22px 18px; color: #64748b; font-size: 13px; line-height: 1.55; }
 .inline-confirm-card footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px 20px; border-top: 1px solid #eef2f7; }
 .inline-confirm-card button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 10px; padding: 0 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
-html[data-theme="dark"] .queue-status.not-queued { color: #cbd5e1; background: #334155; }
-html[data-theme="dark"] .queue-status.queued { color: #bfdbfe; background: rgba(59, 130, 246, .2); }
-html[data-theme="dark"] .inline-confirm-card { border-color: #334155; background: #1e293b; }
-html[data-theme="dark"] .inline-confirm-card h3 { color: #f8fafc; }
-html[data-theme="dark"] .inline-confirm-card p { color: #cbd5e1; }
-html[data-theme="dark"] .inline-confirm-card footer { border-color: #334155; }
+
+
+/* Light theme only: final application-wide guard. */
+html,
+body {
+  color-scheme: light !important;
+  background: #f8fafc !important;
+  color: #374151 !important;
+}
+
+.app-shell,
+.main {
+  background: #f8fafc !important;
+}
+
+.sidebar,
+.dashboard-popover,
+.notification-menu,
+.profile-menu,
+.date-range-menu,
+.modal-card,
+.panel,
+.kpi-card,
+.metric,
+.product-form-panel,
+.stock-update-panel,
+.settings-card,
+.auth-card,
+.table-wrap,
+.low-stock-table,
+.at-a-glance {
+  background: #ffffff !important;
+  color: #374151 !important;
+  border-color: #e5e7eb !important;
+}
+
+.sidebar .brand h1,
+.sidebar-profile strong,
+.header-profile strong,
+.panel h3,
+.section-heading h3,
+.settings-card h3,
+.table-wrap th,
+.table-wrap td,
+.kpi-card strong,
+.metric strong,
+.at-a-glance strong,
+.modal-header h2 {
+  color: #111827 !important;
+}
+
+.nav-link {
+  color: #64748b !important;
+  background: transparent !important;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  color: #2563eb !important;
+  background: #eaf2ff !important;
+  box-shadow: none !important;
+}
+
+input,
+select,
+textarea,
+.dashboard-search,
+.auth-form input:not([type="checkbox"]),
+.auth-form select,
+.modal-form input,
+.modal-form select,
+.modal-form textarea {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #dbe3ee !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.table-wrap th,
+.inventory-health-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.table-wrap td,
+.inventory-health-table td {
+  background: #ffffff !important;
+  color: #374151 !important;
+}

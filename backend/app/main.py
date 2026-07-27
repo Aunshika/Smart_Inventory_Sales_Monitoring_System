@@ -3018,6 +3018,35 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         print(f"Login session database error for {email_identifier}: {type(exc).__name__}: {exc}", file=sys.stderr)
         raise HTTPException(status_code=503, detail="Login session could not be created. Please try again.") from exc
 
+
+@app.get("/auth/session", tags=["Auth"])
+def verify_session(current_user: dict = Depends(get_current_user)):
+    try:
+        user = users_collection.find_one({"username": current_user["sub"]})
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        if str(user.get("status", "Active")).lower() not in {"active", "enabled"}:
+            raise HTTPException(status_code=403, detail="Account inactive or unauthorized.")
+        full_name = user.get("full_name") or user.get("username")
+        account_created = user.get("account_created") or user.get("created_at") or user.get("_id").generation_time
+        location = location_details(user.get("location_id") or current_user.get("location_id") or "ALL")
+        return {
+            "message": "Session valid",
+            "username": user.get("username"),
+            "full_name": full_name,
+            "email": user.get("email"),
+            "phone": user.get("phone", ""),
+            "role": user.get("role"),
+            **location,
+            "account_created": iso_datetime(account_created),
+            "last_login": iso_datetime(user.get("last_login"))
+        }
+    except HTTPException:
+        raise
+    except PyMongoError as exc:
+        raise HTTPException(status_code=503, detail="Unable to verify session. Please sign in again.") from exc
+
+
 @app.post("/auth/confirm-password", tags=["Auth"])
 def confirm_password_for_sensitive_action(
     request: ConfirmPasswordRequest,

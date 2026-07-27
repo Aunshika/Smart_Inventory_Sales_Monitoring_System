@@ -1,11 +1,33 @@
 ﻿const tokenStoreKey = "access_token";
 const userStoreKey = "smart_inventory_user";
 
+function rememberedSessionEnabled() { return localStorage.getItem("smart_inventory_remember_session") === "true"; }
+function activeToken() { return sessionStorage.getItem(tokenStoreKey) || (rememberedSessionEnabled() ? localStorage.getItem(tokenStoreKey) : ""); }
+function activeUser() { return sessionStorage.getItem(userStoreKey) || (rememberedSessionEnabled() ? localStorage.getItem(userStoreKey) : ""); }
+
 const api = {
-  get token() { return localStorage.getItem(tokenStoreKey); },
-  get user() { return JSON.parse(localStorage.getItem(userStoreKey) || "null"); },
-  setSession(token, user) { localStorage.setItem(tokenStoreKey, token); localStorage.removeItem("token"); localStorage.removeItem("smart_inventory_token"); localStorage.setItem(userStoreKey, JSON.stringify(user)); },
-  clearSession() { localStorage.removeItem(tokenStoreKey); localStorage.removeItem("token"); localStorage.removeItem("smart_inventory_token"); localStorage.removeItem(userStoreKey); },
+  get token() { return activeToken(); },
+  get user() { return JSON.parse(activeUser() || "null"); },
+  setSession(token, user, remember = false) {
+    const target = remember ? localStorage : sessionStorage;
+    const other = remember ? sessionStorage : localStorage;
+    other.removeItem(tokenStoreKey);
+    other.removeItem(userStoreKey);
+    target.setItem(tokenStoreKey, token);
+    localStorage.removeItem("token");
+    localStorage.removeItem("smart_inventory_token");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("smart_inventory_token");
+    target.setItem(userStoreKey, JSON.stringify(user));
+  },
+  clearSession() {
+    [localStorage, sessionStorage].forEach((storage) => {
+      storage.removeItem(tokenStoreKey);
+      storage.removeItem("token");
+      storage.removeItem("smart_inventory_token");
+      storage.removeItem(userStoreKey);
+    });
+  },
 
   async login(username, password) {
     const body = new URLSearchParams({ username, password });

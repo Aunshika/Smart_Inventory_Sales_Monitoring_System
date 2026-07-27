@@ -15,7 +15,7 @@ services:
 
   backend:
     build:
-      context: .
+    ontext: .
       dockerfile: backend/Dockerfile
     restart: always
     env_file:

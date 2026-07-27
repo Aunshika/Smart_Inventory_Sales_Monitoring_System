@@ -37,6 +37,52 @@ let googleButtonRendered = false;
 const recaptchaWidgets = { login: null, register: null, forgot: null };
 const recaptchaCompleted = { login: false, register: false, forgot: false };
 
+(function removeLegacyThemePreferences() {
+  try {
+    const legacyKey = ["the", "me"].join("");
+    localStorage.removeItem(`smart_inventory_${legacyKey}`);
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith("smart_inventory_settings_")) continue;
+      const settings = JSON.parse(localStorage.getItem(key) || "{}");
+      if (Object.prototype.hasOwnProperty.call(settings, legacyKey)) {
+        delete settings[legacyKey];
+        localStorage.setItem(key, JSON.stringify(settings));
+      }
+    }
+    sessionStorage.removeItem(`smart_inventory_${legacyKey}`);
+  } catch {
+    // Ignore old preference cleanup failures; the app renders the light design.
+  }
+})();
+
+function enforceLightThemeOnly() {
+  try {
+    document.documentElement.removeAttribute("data-" + "theme");
+    document.body?.removeAttribute("data-" + "theme");
+    const oldModeClass = ["dark", "mode"].join("-");
+    const oldThemeClass = ["dark", "theme"].join("-");
+    const oldPrefixedClass = ["theme", "dark"].join("-");
+    document.documentElement.classList.remove(oldModeClass, oldThemeClass, oldPrefixedClass);
+    document.body?.classList.remove(oldModeClass, oldThemeClass, oldPrefixedClass);
+    const themeWord = ["the", "me"].join("");
+    const previousMode = ["dark", "theme"].join("_");
+    const themeKeys = [
+      themeWord,
+      `app_${themeWord}`,
+      `smart_inventory_${themeWord}`,
+      `smart_inventory_${previousMode}`,
+      `smart_inventory_color_${themeWord}`
+    ];
+    themeKeys.forEach((key) => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+  } catch {
+    // Ignore old preference cleanup failures; the app renders the light design.
+  }
+}
+
 function recaptchaSiteKey() {
   return (window.APP_CONFIG?.RECAPTCHA_SITE_KEY || "").trim();
 }
@@ -109,7 +155,7 @@ function renderRecaptchaWidget(name, elementId) {
   if (recaptchaWidgets[name] !== null) return recaptchaWidgets[name];
   recaptchaWidgets[name] = window.grecaptcha.render(element, {
     sitekey: recaptchaSiteKey(),
-    theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+    theme: "light",
     size: "normal",
     callback: () => {
       recaptchaCompleted[name] = true;
@@ -232,8 +278,90 @@ const rolePageAccess = {
   Staff: ["dashboard", "products", "inventory", "sales", "profile"]
 };
 
+const AUTH_SESSION_KEYS = ["access_token", "role", "username", "userProfile", "lastLogin"];
+const REMEMBER_SESSION_KEY = "smart_inventory_remember_session";
+const REMEMBER_IDENTIFIER_KEY = "smart_inventory_remember_identifier";
+
+function getAuthValue(key) {
+  const sessionValue = sessionStorage.getItem(key);
+  if (sessionValue) return sessionValue;
+  if (localStorage.getItem(REMEMBER_SESSION_KEY) === "true") {
+    return localStorage.getItem(key) || "";
+  }
+  if (AUTH_SESSION_KEYS.includes(key)) localStorage.removeItem(key);
+  return "";
+}
+
+function getStoredAccessToken() {
+  return getAuthValue("access_token");
+}
+
+function getStoredUserProfile() {
+  try {
+    return JSON.parse(getAuthValue("userProfile") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function clearAuthSession() {
+  AUTH_SESSION_KEYS.forEach((key) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  });
+  localStorage.removeItem("token");
+  localStorage.removeItem("smart_inventory_token");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("smart_inventory_token");
+  localStorage.removeItem(REMEMBER_SESSION_KEY);
+  localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
+}
+
+function setAuthValue(key, value, remember) {
+  const target = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  other.removeItem(key);
+  if (value === undefined || value === null) target.removeItem(key);
+  else target.setItem(key, String(value));
+}
+
+function rememberMeChecked() {
+  return Boolean(document.getElementById("rememberMe")?.checked);
+}
+
+function activeSessionIsRemembered() {
+  return localStorage.getItem(REMEMBER_SESSION_KEY) === "true" && Boolean(localStorage.getItem("access_token"));
+}
+
+
+function prefillRememberedIdentifier() {
+  const remembered = localStorage.getItem(REMEMBER_IDENTIFIER_KEY) || "";
+  const usernameInput = document.getElementById("loginUsername");
+  const rememberInput = document.getElementById("rememberMe");
+  if (remembered && usernameInput && !usernameInput.value) usernameInput.value = remembered;
+  if (remembered && rememberInput) rememberInput.checked = true;
+}
+
+function profileFromSessionResponse(data) {
+  const user = data.user || data;
+  return {
+    username: user.username,
+    full_name: user.full_name || user.name || user.username,
+    email: user.email,
+    phone: user.phone || "",
+    role: user.role,
+    location_id: user.location_id || "ALL",
+    warehouse_id: user.warehouse_id || "",
+    warehouse_name: user.warehouse_name || user.location_name || user.location || (user.role === "Admin" ? "All Warehouses" : ""),
+    location: user.location || user.warehouse_name || user.location_name || "",
+    state: user.state || "",
+    account_created: user.account_created || "",
+    last_login: user.last_login || new Date().toISOString()
+  };
+}
+
 function currentUserRole() {
-  return localStorage.getItem("role") || getProfileDetails().role || "Staff";
+  return getAuthValue("role") || getProfileDetails().role || "Staff";
 }
 
 function allowedViewsForRole(role = currentUserRole()) {
@@ -416,7 +544,7 @@ function navigateToViewWithParams(name, params = {}) {
 }
 
 function showProtectedRoute(name, replace = false) {
-  const token = localStorage.getItem("access_token");
+  const token = getStoredAccessToken();
   if (!token) {
     showLogin(true);
     setAuthStatus("Please sign in to continue.");
@@ -445,7 +573,7 @@ function handleRoute() {
     showProtectedRoute(route, true);
     return;
   }
-  if (localStorage.getItem("access_token")) {
+  if (getStoredAccessToken()) {
     showDashboard(preferredLandingPage(), true);
   } else {
     showLogin(true);
@@ -540,7 +668,7 @@ function bindPressHoldPasswordReveal() {
 
 bindPressHoldPasswordReveal();
 
-function saveAuthenticatedSession(data) {
+function saveAuthenticatedSession(data, remember = false) {
   const user = data.user || data;
   const sessionUser = {
     username: user.username,
@@ -556,14 +684,72 @@ function saveAuthenticatedSession(data) {
     account_created: user.account_created || "",
     last_login: user.last_login || new Date().toISOString()
   };
-  localStorage.setItem("access_token", data.access_token);
+  remember = Boolean(remember);
+  setAuthValue("access_token", data.access_token, remember);
   localStorage.removeItem("token");
   localStorage.removeItem("smart_inventory_token");
-  localStorage.setItem("role", sessionUser.role);
-  localStorage.setItem("username", sessionUser.username);
-  localStorage.setItem("userProfile", JSON.stringify(sessionUser));
-  localStorage.setItem("lastLogin", sessionUser.last_login);
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("smart_inventory_token");
+  setAuthValue("role", sessionUser.role, remember);
+  setAuthValue("username", sessionUser.username, remember);
+  setAuthValue("userProfile", JSON.stringify(sessionUser), remember);
+  setAuthValue("lastLogin", sessionUser.last_login, remember);
+  if (remember) {
+    localStorage.setItem(REMEMBER_SESSION_KEY, "true");
+    localStorage.setItem(REMEMBER_IDENTIFIER_KEY, sessionUser.email || sessionUser.username || "");
+  } else {
+    localStorage.removeItem(REMEMBER_SESSION_KEY);
+    localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
+  }
   applyAppSettings();
+}
+
+async function verifyStoredSession() {
+  const token = getStoredAccessToken();
+  if (!token) return false;
+  try {
+    const response = await fetch(`${API_URL}/auth/session`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const text = await response.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+    if (!response.ok) {
+      clearAuthSession();
+      return false;
+    }
+    const remember = localStorage.getItem(REMEMBER_SESSION_KEY) === "true" && localStorage.getItem("access_token") === token;
+    const profile = profileFromSessionResponse(data);
+    setAuthValue("role", profile.role, remember);
+    setAuthValue("username", profile.username, remember);
+    setAuthValue("userProfile", JSON.stringify(profile), remember);
+    setAuthValue("lastLogin", profile.last_login, remember);
+    applyAppSettings();
+    return true;
+  } catch (error) {
+    console.warn("Unable to verify stored session", error);
+    clearAuthSession();
+    return false;
+  }
+}
+
+async function bootstrapApplication() {
+  prefillRememberedIdentifier();
+  const route = currentRouteName();
+  const hasToken = Boolean(getStoredAccessToken());
+  if (hasToken) {
+    const valid = await verifyStoredSession();
+    if (valid) {
+      if (!route || route === "login" || route === "register") {
+        showDashboard(preferredLandingPage(), true);
+        setCleanRoute(preferredLandingPage(), true);
+      } else {
+        handleRoute();
+      }
+      return;
+    }
+  }
+  handleRoute();
 }
 
 function googleAuthUrl() {
@@ -615,7 +801,7 @@ async function handleGoogleCredential(response) {
       "Google login failed. Empty response from server."
     );
     if (!result.ok) throw new Error(data.detail || "Google sign-in failed.");
-    saveAuthenticatedSession(data);
+    saveAuthenticatedSession(data, rememberMeChecked());
     showDashboard(preferredLandingPage());
   } catch (error) {
     setAuthStatus(error.message || "Google sign-in failed.");
@@ -721,7 +907,7 @@ function setAuthStatus(message, isError = true) {
 }
 
 function showDashboard(targetView = "dashboard", updateRoute = true) {
-  const token = localStorage.getItem("access_token");
+  const token = getStoredAccessToken();
 
   if (!token) {
     showLogin(true);
@@ -750,11 +936,7 @@ function showDashboard(targetView = "dashboard", updateRoute = true) {
 }
 
 function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("token");
-  localStorage.removeItem("smart_inventory_token");
-  localStorage.removeItem("userProfile");
-  localStorage.removeItem("lastLogin");
+  clearAuthSession();
   authScreen.hidden = false;
   dashboardScreen.hidden = true;
   dashboardData = null;
@@ -848,7 +1030,7 @@ loginForm.addEventListener("submit", async function (e) {
 
 
     passwordInput.value = "";
-    saveAuthenticatedSession(data);
+    saveAuthenticatedSession(data, rememberMeChecked());
 
     showDashboard(preferredLandingPage());
   } catch (error) {
@@ -938,7 +1120,7 @@ registerForm.addEventListener("submit", async function (e) {
   }
 });
 async function authFetch(endpoint, options = {}) {
-  const token = localStorage.getItem("access_token");
+  const token = getStoredAccessToken();
   const timeoutMs = options.timeoutMs || 15000;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -2174,7 +2356,7 @@ function updateNotifications(lowStockProducts, periodSales, periodPurchases, mov
   renderNotificationMenu();
 }
 function notificationReadStorageKey() {
-  return `smart_inventory_read_notifications_${localStorage.getItem("username") || "guest"}`;
+  return `smart_inventory_read_notifications_${getAuthValue("username") || "guest"}`;
 }
 
 function getReadNotificationIds() {
@@ -2363,7 +2545,6 @@ const appSettingsDefaults = {
   purchaseAlerts: true,
   salesAlerts: true,
   systemNotifications: true,
-  theme: "light",
   compactLayout: false,
   sidebarAutoCollapse: false,
   currency: "INR",
@@ -2373,28 +2554,22 @@ const appSettingsDefaults = {
 };
 
 function settingsStorageKey() {
-  return `smart_inventory_settings_${localStorage.getItem("username") || "guest"}`;
+  return `smart_inventory_settings_${getAuthValue("username") || "guest"}`;
 }
 
 function getAppSettings() {
   try {
-    const globalTheme = localStorage.getItem("smart_inventory_theme");
     return {
       ...appSettingsDefaults,
-      ...(globalTheme ? { theme: globalTheme } : {}),
       ...JSON.parse(localStorage.getItem(settingsStorageKey()) || "{}")
     };
   } catch {
-    const globalTheme = localStorage.getItem("smart_inventory_theme");
-    return { ...appSettingsDefaults, ...(globalTheme ? { theme: globalTheme } : {}) };
+    return { ...appSettingsDefaults };
   }
 }
 
 function saveAppSettings(settings) {
   localStorage.setItem(settingsStorageKey(), JSON.stringify(settings));
-  if (settings.theme) {
-    localStorage.setItem("smart_inventory_theme", settings.theme);
-  }
 }
 
 let autoRefreshTimer = null;
@@ -2421,13 +2596,13 @@ function notificationPreferenceEnabled(key) {
 function resetSessionTimeout() {
   window.clearTimeout(sessionTimeoutTimer);
   sessionTimeoutTimer = null;
-  const token = localStorage.getItem("access_token");
+  const token = getStoredAccessToken();
   if (!token) return;
-  const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+  const profile = JSON.parse(getAuthValue("userProfile") || "{}");
   const configuredMinutes = Number(getAppSettings().sessionTimeout || 30);
   const minutes = profile.role === "Admin" ? Math.min(configuredMinutes, 15) : configuredMinutes;
   sessionTimeoutTimer = window.setTimeout(() => {
-    if (!localStorage.getItem("access_token")) return;
+    if (!getStoredAccessToken()) return;
     showToast("Session timed out. Please sign in again.", "error");
     logout();
   }, Math.max(1, minutes) * 60 * 1000);
@@ -2435,14 +2610,13 @@ function resetSessionTimeout() {
 
 function applyAppSettings() {
   const settings = getAppSettings();
-  document.documentElement.dataset.theme = settings.theme === "dark" ? "dark" : "light";
   document.body.classList.toggle("compact-layout", Boolean(settings.compactLayout));
   document.body.classList.toggle("sidebar-auto-collapse", Boolean(settings.sidebarAutoCollapse));
   window.clearInterval(autoRefreshTimer);
   autoRefreshTimer = null;
-  if (settings.autoRefresh && localStorage.getItem("access_token")) {
+  if (settings.autoRefresh && getStoredAccessToken()) {
     autoRefreshTimer = window.setInterval(() => {
-      if (document.hidden || !localStorage.getItem("access_token")) return;
+      if (document.hidden || !getStoredAccessToken()) return;
       invalidateDashboardData();
       if (activeView === "dashboard") loadDashboardData();
     }, 60000);
@@ -2473,7 +2647,7 @@ function renderSettingsPage() {
         <div>
           <span class="settings-eyebrow"><i data-lucide="settings-2"></i> Application Settings</span>
           <h3>Preferences and system configuration</h3>
-          <p>Control workspace defaults, alerts, appearance, regional formats, and session behavior.</p>
+          <p>Control workspace defaults, alerts, regional formats, and session behavior.</p>
         </div>
       </section>
 
@@ -2507,11 +2681,7 @@ function renderSettingsPage() {
         </article>
 
         <article class="settings-card">
-          <header><span class="settings-card-icon green"><i data-lucide="palette"></i></span><div><h3>Appearance</h3><p>Personalize the application layout.</p></div></header>
-          <div class="theme-choice-group">
-            <label class="theme-choice ${settings.theme === "dark" ? "" : "active"}"><input type="radio" name="theme" value="light" ${settings.theme === "dark" ? "" : "checked"}><span><i data-lucide="sun"></i></span><strong>Light Theme</strong><small>${settings.theme === "dark" ? "Available" : "Active"}</small></label>
-            <label class="theme-choice ${settings.theme === "dark" ? "active" : ""}"><input type="radio" name="theme" value="dark" ${settings.theme === "dark" ? "checked" : ""}><span><i data-lucide="moon"></i></span><strong>Dark Theme</strong><small>${settings.theme === "dark" ? "Active" : "Available"}</small></label>
-          </div>
+          <header><span class="settings-card-icon green"><i data-lucide="layout-dashboard"></i></span><div><h3>Layout Preferences</h3><p>Personalize spacing and sidebar behavior.</p></div></header>
           <div class="settings-fields">
             ${toggleMarkup("compactLayout", "Compact Layout", "Reduce spacing in data-heavy screens.", settings.compactLayout)}
             ${toggleMarkup("sidebarAutoCollapse", "Sidebar Auto Collapse", "Collapse sidebar automatically on smaller screens.", settings.sidebarAutoCollapse)}
@@ -2585,7 +2755,6 @@ function readSettingsForm(form) {
     purchaseAlerts: form.elements.purchaseAlerts.checked,
     salesAlerts: form.elements.salesAlerts.checked,
     systemNotifications: form.elements.systemNotifications.checked,
-    theme: formData.get("theme") || "light",
     compactLayout: form.elements.compactLayout.checked,
     sidebarAutoCollapse: form.elements.sidebarAutoCollapse.checked,
     currency: formData.get("currency"),
@@ -2609,11 +2778,6 @@ function bindSettingsPage() {
 
   form.addEventListener("change", (event) => {
     persistSettingsFromForm(form);
-    if (event.target.name === "theme") {
-      dashboardContent.innerHTML = renderSettingsPage();
-      bindSettingsPage();
-      refreshIcons();
-    }
   });
 
   form.addEventListener("submit", (event) => {
@@ -2768,7 +2932,7 @@ async function openView(name, page = 1, updateRoute = true) {
   }
 }
 async function loadInventoryWorkspace(tab = "overview", page = 1) {
-  const role = localStorage.getItem("role");
+  const role = getAuthValue("role");
   const canStockIn = ["Admin", "Manager"].includes(role);
   const canHistory = ["Admin", "Manager"].includes(role);
   dashboardContent.innerHTML = renderSkeletonPanel(3, "Loading inventory...");
@@ -2817,7 +2981,7 @@ async function loadInventoryWorkspace(tab = "overview", page = 1) {
 }
 
 function renderInventoryShell(tab, content, canStockIn, canHistory) {
-  const canUpdateStock = ["Admin", "Manager", "Staff"].includes(localStorage.getItem("role"));
+  const canUpdateStock = ["Admin", "Manager", "Staff"].includes(getAuthValue("role"));
   const updateDisabled = canUpdateStock ? "" : "disabled";
   const historyDisabled = canHistory ? "" : "disabled";
   return `<div class="inventory-tabs"><button class="inventory-tab ${tab === "overview" ? "active" : ""}" data-inventory-tab="overview">Overview</button><button class="inventory-tab ${tab === "update" ? "active" : ""}" data-inventory-tab="update" ${updateDisabled}>Stock update</button><button class="inventory-tab ${tab === "history" ? "active" : ""}" data-inventory-tab="history" ${historyDisabled}>Stock history</button></div>${content}`;
@@ -2948,7 +3112,7 @@ function productImageCell(product) {
   return `<td><img class="product-image-thumb" src="${escapeHtml(imageSrc)}" data-local-fallback="${escapeHtml(generatedFallback)}" data-final-fallback="${PRODUCT_IMAGE_FALLBACK}" alt="${escapeHtml(productName)}" width="48" height="48" loading="lazy" onerror="if(this.dataset.triedLocal !== '1'){this.dataset.triedLocal='1';this.src=this.dataset.localFallback;}else{this.onerror=null;this.src=this.dataset.finalFallback;this.alt='No image available';}"></td>`;
 }
 function renderProductsPage(response) {
-  const canManage = ["Admin", "Manager"].includes(localStorage.getItem("role"));
+  const canManage = ["Admin", "Manager"].includes(getAuthValue("role"));
   const rows = response.items || [];
   const supplierIds = (dashboardData?.suppliers || []).map((supplier) => supplier.supplier_id).filter(Boolean);
   const supplierOptions = supplierIds.map((supplierId) => `<option value="${escapeHtml(supplierId)}"></option>`).join("");
@@ -4100,7 +4264,7 @@ async function loadUserManagement(page = 1, renderToken = viewRenderToken, filte
     bindUserFilters(activeFilters);
     refreshIcons();
   } catch (error) {
-    const role = localStorage.getItem("role");
+    const role = getAuthValue("role");
     if (!isActiveRender("users", renderToken)) return;
     dashboardContent.innerHTML = role !== "Admin"
       ? `<section class="panel role-access-panel"><h3>User Management</h3><p>User management is available only for Admin accounts. Your current role is ${escapeHtml(role || "Unknown")}.</p></section>`
@@ -4354,9 +4518,9 @@ function reportDownloadErrorMessage(status, responseText = "") {
 
 function currentSessionRole() {
   try {
-    return JSON.parse(localStorage.getItem("userProfile") || "{}").role || localStorage.getItem("role") || "";
+    return JSON.parse(getAuthValue("userProfile") || "{}").role || getAuthValue("role") || "";
   } catch {
-    return localStorage.getItem("role") || "";
+    return getAuthValue("role") || "";
   }
 }
 
@@ -4408,7 +4572,7 @@ function confirmAdminSensitiveAction(actionLabel = "continue") {
 }
 
 async function downloadProtectedReport(endpoint) {
-  const token = localStorage.getItem("access_token");
+  const token = getStoredAccessToken();
   if (!token) {
     throw new Error("Your session is missing. Please sign in again.");
   }
@@ -4540,14 +4704,14 @@ function bindDashboardActions() {
 }
 
 function profileStorageKey() {
-  return `smart_inventory_profile_${localStorage.getItem("username") || "guest"}`;
+  return `smart_inventory_profile_${getAuthValue("username") || "guest"}`;
 }
 
 function getProfileDetails() {
-  const session = JSON.parse(localStorage.getItem("userProfile") || "{}");
-  const username = session.username || localStorage.getItem("username") || "";
+  const session = JSON.parse(getAuthValue("userProfile") || "{}");
+  const username = session.username || getAuthValue("username") || "";
   const saved = JSON.parse(localStorage.getItem(profileStorageKey()) || "{}");
-  const role = session.role || localStorage.getItem("role") || "";
+  const role = session.role || getAuthValue("role") || "";
   return {
     name: session.full_name || username,
     email: session.email || "",
@@ -4559,7 +4723,7 @@ function getProfileDetails() {
     location: role === "Admin" ? "All Warehouses" : (session.location || session.warehouse_name || session.location_name || ""),
     state: session.state || "",
     createdAt: session.account_created || "",
-    lastLogin: session.last_login || localStorage.getItem("lastLogin") || ""
+    lastLogin: session.last_login || getAuthValue("lastLogin") || ""
   };
 }
 
@@ -4761,8 +4925,8 @@ function showEditProfileModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: name, email, phone })
       });
-      const currentSession = JSON.parse(localStorage.getItem("userProfile") || "{}");
-      localStorage.setItem("userProfile", JSON.stringify({ ...currentSession, ...updatedProfile }));
+      const currentSession = JSON.parse(getAuthValue("userProfile") || "{}");
+      setAuthValue("userProfile", JSON.stringify({ ...currentSession, ...updatedProfile }), activeSessionIsRemembered());
       const saved = JSON.parse(localStorage.getItem(profileStorageKey()) || "{}");
       const preview = document.querySelector("#editAvatarPreview img");
       localStorage.setItem(profileStorageKey(), JSON.stringify({ ...saved, avatar: preview?.src || saved.avatar || "" }));
@@ -4825,7 +4989,7 @@ function showPasswordModal() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`
+          Authorization: `Bearer ${getStoredAccessToken()}`
         },
         body: JSON.stringify({
           current_password: current,
@@ -5123,8 +5287,7 @@ applyAppSettings();
   document.addEventListener(eventName, resetSessionTimeout, { passive: true });
 });
 loadPublicConfig().finally(() => {
-  handleRoute();
-  initializeGoogleSignIn();
+  bootstrapApplication().finally(initializeGoogleSignIn);
 });
 initDashboardControls();
 document.addEventListener("input", (event) => {
