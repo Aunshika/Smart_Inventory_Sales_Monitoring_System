@@ -857,6 +857,7 @@ function clearLoginFormFields() {
     feedback.innerHTML = "";
     feedback.hidden = true;
   }
+  clearLoginValidation();
   setAuthStatus("");
   resetRecaptcha("login");
 }
@@ -968,6 +969,49 @@ function logout() {
   setCleanRoute("login", true);
 }
 
+function setLoginFieldError(input, errorId, message = "") {
+  const errorEl = document.getElementById(errorId);
+  if (input) {
+    input.classList.toggle("input-invalid", Boolean(message));
+    input.setAttribute("aria-invalid", message ? "true" : "false");
+  }
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.hidden = !message;
+  }
+}
+
+function clearLoginValidation() {
+  setLoginFieldError(document.getElementById("loginUsername"), "loginUsernameError");
+  setLoginFieldError(document.getElementById("loginPassword"), "loginPasswordError");
+}
+
+function validateLoginFields(usernameInput, passwordInput) {
+  clearLoginValidation();
+  const username = (usernameInput?.value || "").trim();
+  const password = (passwordInput?.value || "").trim();
+  let valid = true;
+  if (!username) {
+    setLoginFieldError(usernameInput, "loginUsernameError", "Username or email is required.");
+    valid = false;
+  }
+  if (!password) {
+    setLoginFieldError(passwordInput, "loginPasswordError", "Password is required.");
+    valid = false;
+  }
+  return { valid, username, password };
+}
+
+function loginResponseMessage(response, data, responseText) {
+  if (response.status === 400) return data.detail || "Please complete all required login fields.";
+  if (response.status === 401) return "Invalid username/email or password.";
+  if (response.status === 403) return data.detail || "Your account is inactive or you do not have permission to sign in.";
+  if (response.status === 429) return formatLoginRetryMessage(response);
+  if (response.status === 503) return data.detail || "Login service is temporarily unavailable. Please try again.";
+  if (response.status >= 500) return "Server error while signing in. Please try again shortly.";
+  return data.detail || responseText || "Unable to sign in. Please try again.";
+}
+
 function formatLoginRetryMessage(response) {
   const retryAfter = Number(response.headers.get("Retry-After") || 0);
   if (!retryAfter || Number.isNaN(retryAfter)) {
@@ -989,12 +1033,17 @@ loginForm.addEventListener("submit", async function (e) {
   const usernameInput = document.getElementById("loginUsername");
   const passwordInput = document.getElementById("loginPassword");
   const feedback = document.getElementById("loginPasswordFeedback");
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
   if (feedback) {
     feedback.innerHTML = "";
     feedback.hidden = true;
   }
+  const { valid, username, password } = validateLoginFields(usernameInput, passwordInput);
+  if (!valid) {
+    setAuthStatus("Please fix the highlighted login fields.");
+    (username ? passwordInput : usernameInput)?.focus();
+    return;
+  }
+  usernameInput.value = username;
 
   let recaptchaToken = "";
   try {
@@ -1040,7 +1089,14 @@ loginForm.addEventListener("submit", async function (e) {
     }
 
     if (!response.ok) {
-      setAuthStatus(response.status === 429 ? formatLoginRetryMessage(response) : (data.detail || responseText || "Invalid username or password."));
+      const message = loginResponseMessage(response, data, responseText);
+      if (response.status === 400 && /username|email/i.test(message)) {
+        setLoginFieldError(usernameInput, "loginUsernameError", message);
+      }
+      if (response.status === 400 && /password/i.test(message)) {
+        setLoginFieldError(passwordInput, "loginPasswordError", message);
+      }
+      setAuthStatus(message);
       resetRecaptcha("login");
       return;
     }
@@ -1053,8 +1109,10 @@ loginForm.addEventListener("submit", async function (e) {
   } catch (error) {
     if (error?.name === "AbortError") {
       setAuthStatus("Login request timed out. Please try again.");
+    } else if (!navigator.onLine) {
+      setAuthStatus("You appear to be offline. Check your internet connection and try again.");
     } else {
-      setAuthStatus(error.message || "Backend server is not running.");
+      setAuthStatus("Unable to reach the server. Please check the backend connection and try again.");
     }
   } finally {
     window.clearTimeout(timeoutId);

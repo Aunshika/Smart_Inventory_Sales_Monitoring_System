@@ -2928,7 +2928,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         print(f"[login] {step} in {elapsed_ms:.1f}ms", file=sys.stderr)
 
     login_log("request received")
-    username = validate_required(form_data.username, "Username")
+    username = validate_required(form_data.username, "Username or email")
     password = validate_required(form_data.password, "Password")
     form = await request.form()
     recaptcha_token = form.get("recaptcha_token")

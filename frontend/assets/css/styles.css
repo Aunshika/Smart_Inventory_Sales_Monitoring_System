@@ -1648,3 +1648,23 @@ textarea::placeholder {
   background: #ffffff !important;
   color: #374151 !important;
 }
+/* Login validation feedback */
+.field-error {
+  margin: -8px 0 2px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.auth-form input.input-invalid:not([type="checkbox"]),
+.auth-form select.input-invalid,
+.input-invalid {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .10), 0 3px 9px rgba(15, 23, 42, .07) !important;
+}
+
+.auth-form button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: .7;
+}
