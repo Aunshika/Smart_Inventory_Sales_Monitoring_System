@@ -845,6 +845,22 @@ function startGoogleSignIn() {
   });
 }
 
+function clearLoginFormFields() {
+  const usernameInput = document.getElementById("loginUsername");
+  const passwordInput = document.getElementById("loginPassword");
+  const rememberInput = document.getElementById("rememberMe");
+  const feedback = document.getElementById("loginPasswordFeedback");
+  if (usernameInput) usernameInput.value = "";
+  if (passwordInput) passwordInput.value = "";
+  if (rememberInput) rememberInput.checked = false;
+  if (feedback) {
+    feedback.innerHTML = "";
+    feedback.hidden = true;
+  }
+  setAuthStatus("");
+  resetRecaptcha("login");
+}
+
 function showLogin(skipRoute = false) {
   document.body.classList.remove("auth-register-mode");
   loginForm.hidden = false;
@@ -937,6 +953,7 @@ function showDashboard(targetView = "dashboard", updateRoute = true) {
 
 function logout() {
   clearAuthSession();
+  clearLoginFormFields();
   authScreen.hidden = false;
   dashboardScreen.hidden = true;
   dashboardData = null;
